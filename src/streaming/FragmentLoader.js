@@ -29,6 +29,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 import HTTPLoader from './net/HTTPLoader';
+import URLLoader from './net/URLLoader';
 import HeadRequest from './vo/HeadRequest';
 import DashJSError from './vo/DashJSError';
 import EventBus from './../core/EventBus';
@@ -46,10 +47,11 @@ function FragmentLoader(config) {
     const eventBus = EventBus(context).getInstance();
 
     let instance,
-        httpLoader;
+    urlLoader;
 
     function setup() {
-        httpLoader = HTTPLoader(context).create({
+        eventBus.on(Events.LOADING_ONLINE_COMPLETED, onLoadingOnlineCompleted, instance);
+        urlLoader = URLLoader(context).create({
             errHandler: config.errHandler,
             metricsModel: config.metricsModel,
             mediaPlayerModel: config.mediaPlayerModel,
@@ -86,50 +88,9 @@ function FragmentLoader(config) {
     }
 
     function load(request) {
-        const report = function (data, error) {
-            eventBus.trigger(Events.LOADING_COMPLETED, {
-                request: request,
-                response: data || null,
-                error: error || null,
-                sender: instance
-            });
-        };
 
         if (request) {
-            httpLoader.load({
-                request: request,
-                progress: function (data) {
-                    eventBus.trigger(Events.LOADING_PROGRESS, {
-                        request: request
-                    });
-                    if (data) {
-                        eventBus.trigger(Events.LOADING_DATA_PROGRESS, {
-                            request: request,
-                            response: data || null,
-                            error: null,
-                            sender: instance
-                        });
-                    }
-                },
-                success: function (data) {
-                    report(data);
-                },
-                error: function (request, statusText, errorText) {
-                    report(
-                        undefined,
-                        new DashJSError(
-                            FRAGMENT_LOADER_ERROR_LOADING_FAILURE,
-                            errorText,
-                            statusText
-                        )
-                    );
-                },
-                abort: function (request) {
-                    if (request) {
-                        eventBus.trigger(Events.LOADING_ABANDONED, {request: request, mediaType: request.mediaType, sender: instance});
-                    }
-                }
-            });
+            urlLoader.registerNetworkLoader(request);
         } else {
             report(
                 undefined,
@@ -139,6 +100,15 @@ function FragmentLoader(config) {
                 )
             );
         }
+    }
+
+    function onLoadingOnlineCompleted(e) {
+        eventBus.trigger(Events.LOADING_COMPLETED, {
+            request: e.request,
+            response: e.response,
+            error: e.error,
+            sender: this
+        });
     }
 
     function abort() {
