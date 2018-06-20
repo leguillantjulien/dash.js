@@ -110,7 +110,7 @@ function FragmentController( config ) {
         chunk.quality = request.quality;
         chunk.representationId = request.representationId;
         chunk.endFragment = endFragment;
-
+        console.log(chunk)
         return chunk;
     }
 
@@ -118,7 +118,7 @@ function FragmentController( config ) {
         if (fragmentModels[e.request.mediaType] !== e.sender) {
             return;
         }
-
+        console.log(JSON.stringify(e));
         const request = e.request;
         const bytes = e.response;
         const isInit = isInitializationRequest(request);

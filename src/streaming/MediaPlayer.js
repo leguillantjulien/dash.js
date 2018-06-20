@@ -45,6 +45,7 @@ import ManifestModel from './models/ManifestModel';
 import MediaPlayerModel from './models/MediaPlayerModel';
 import MetricsModel from './models/MetricsModel';
 import AbrController from './controllers/AbrController';
+import OfflineController from './controllers/OfflineController';
 import VideoModel from './models/VideoModel';
 import DOMStorage from './utils/DOMStorage';
 import Debug from './../core/Debug';
@@ -97,6 +98,7 @@ function MediaPlayer() {
         playbackInitialized,
         autoPlay,
         abrController,
+        offlineController,
         timelineConverter,
         mediaController,
         protectionController,
@@ -130,6 +132,7 @@ function MediaPlayer() {
         streamingInitialized = false;
         autoPlay = true;
         protectionController = null;
+        offlineController = null;
         protectionData = null;
         adapter = null;
         Events.extend(MediaPlayerEvents);
@@ -165,6 +168,9 @@ function MediaPlayer() {
         }
         if (config.mediaController) {
             mediaController = config.mediaController;
+        }
+        if (config.offlineController) {
+            offlineController = config.offlineController;
         }
     }
 
@@ -211,6 +217,10 @@ function MediaPlayer() {
 
         if (!mediaController) {
             mediaController = MediaController(context).getInstance();
+        }
+
+        if (!offlineController) {
+            offlineController = OfflineController(context).getInstance();
         }
 
         adapter = DashAdapter(context).getInstance();

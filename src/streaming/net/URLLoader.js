@@ -28,101 +28,38 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-import HTTPLoader from './HTTPLoader';
-import EventBus from './../../core/EventBus';
-import NetworkLoader from './NetworkLoader';
-import Events from './../../core/events/Events';
 import FactoryMaker from '../../core/FactoryMaker';
+import URLUtils from '../utils/URLUtils';
+import IndexDBOfflineLoader from './IndexDBOfflineLoader';
 
-const HTTP_PREFIX = 'http://';
-const HTTPS_PREFIX = 'https://';
-const OFFLINE_PREFIX = 'offline:manifest/idb/';
-const FRAGMENT_LOADER_ERROR_LOADING_FAILURE = 1;
-const FRAGMENT_LOADER_ERROR_NULL_REQUEST = 2;
-const FRAGMENT_LOADER_MESSAGE_NULL_REQUEST = 'request is null';
-/**
- * @implements NetworkLoader
- */
 function URLLoader(cfg) {
 
     cfg = cfg || {};
     const context = this.context;
-    const eventBus = EventBus(context).getInstance();
+    const urlUtils = URLUtils(context).getInstance();
 
     let instance,
         httpLoader,
-        scheme;
+        indexDBOfflineLoader;
 
-    httpLoader = HTTPLoader(context).create({
-        errHandler: cfg.errHandler,
-        metricsModel: cfg.metricsModel,
-        mediaPlayerModel: cfg.mediaPlayerModel,
-        requestModifier: cfg.requestModifier,
-        useFetch: cfg.mediaPlayerModel.getLowLatencyEnabled()
-    });
+    httpLoader = cfg.httpLoader;
+    indexDBOfflineLoader = IndexDBOfflineLoader(context).create();
 
-    function registerNetworkLoader(request) {
-        const report = function (data, error) {
-            eventBus.trigger(Events.LOADING_ONLINE_COMPLETED, {
-                request: request,
-                response: data || null,
-                error: error || null,
-                sender: instance
-            });
-        };
-
-        scheme = request.url;
-        if (scheme.includes(HTTP_PREFIX) || scheme.includes(HTTPS_PREFIX)) {
-            httpLoader.load({
-                request: request,
-                progress: function (data) {
-                    eventBus.trigger(Events.LOADING_PROGRESS, {
-                        request: request
-                    });
-                    if (data) {
-                        eventBus.trigger(Events.LOADING_DATA_PROGRESS, {
-                            request: request,
-                            response: data || null,
-                            error: null,
-                            sender: instance
-                        });
-                    }
-                },
-                success: function (data) {
-                    report(data);
-                },
-                error: function (request, statusText, errorText) {
-                    report(
-                        undefined,
-                        new DashJSError(
-                            FRAGMENT_LOADER_ERROR_LOADING_FAILURE,
-                            errorText,
-                            statusText
-                        )
-                    );
-                },
-                abort: function (request) {
-                    if (request) {
-                        eventBus.trigger(Events.LOADING_ABANDONED, {request: request, mediaType: request.mediaType, sender: instance});
-                    }
-                }
-            });
-        } else if (scheme.includes(OFFLINE_PREFIX)) {
-            console.log('Offline reading ! IndexDBOfflineLoader');
-            //
-            //LOADING_OFFLINE_COMPLETED
-            //IndexDBOfflineLoader
-            //offline:manifest/idb/v3/2
+    function load(config) {
+        console.log('URLLoader ' + JSON.stringify(config));
+        if (urlUtils.isOfflineURL(config.request.url)) {
+            indexDBOfflineLoader.load(config);
+        } else{
+            httpLoader.load(config);
         }
     }
 
-    function unregisterNetworkLoader(scheme) {
-        console.log('unregisterNetworkLoader called');
+    function abort() {
+        httpLoader.abort();
     }
-
     instance = {
-        registerNetworkLoader: registerNetworkLoader,
-        unregisterNetworkLoader: unregisterNetworkLoader,
+        load: load,
+        abort:abort
     };
 
     return instance;

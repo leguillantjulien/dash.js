@@ -470,6 +470,27 @@ app.controller('DashController', function ($scope, sources, contributors, dashif
         stopMetricsInterval();
     }
 
+    $scope.doDownload = function () {
+        $scope.initSession();
+
+        var protData = {};
+        if ($scope.selectedItem.hasOwnProperty('protData')) {
+            protData = $scope.selectedItem.protData;
+        } else if ($scope.drmLicenseURL !== '' && $scope.drmKeySystem !== '') {
+            protData[$scope.drmKeySystem] = {
+                serverURL: $scope.drmLicenseURL
+            };
+        } else {
+            protData = null;
+        }
+
+        // Check if persistent license session ID is stored for current stream
+        var sessionId = $scope.persistentSessionId[$scope.selectedItem.url];
+        if (sessionId) {
+            protData[$scope.selectedKeySystem].sessionId = sessionId;
+        }
+    }
+
     $scope.changeTrackSwitchMode = function (mode, type) {
         $scope.player.setTrackSwitchModeFor(type, mode);
     };

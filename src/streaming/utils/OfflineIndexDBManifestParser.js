@@ -28,20 +28,31 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+import FactoryMaker from '../../core/FactoryMaker';
+import Debug from '../../core/Debug';
+import IndexDBStore from './../IndexDBStore';
+import URLUtils from './URLUtils';
 
-/**
- * Offline and online methods to manage loader.
- * @interface NetworkLoader
- */
-/**
- * Register a network loader
- * @function NetworkLoader#registerNetworkLoader
- * @param {String} scheme's URL
- * @param {Object} loaderFactory
- */
-/**
- * Remove a network loader
- * @function NetworkLoader#unregisterNetworkLoader
- * @param {String} scheme's URL
- */
+function OfflineIndexDBManifestParser() {
+    const context = this.context;
+    const urlUtils = URLUtils(context).getInstance();
 
+    let instance,
+        indexDBStore,
+        logger;
+
+    indexDBStore = IndexDBStore(context).create();
+
+    function setup() {
+        logger = Debug(context).getInstance().getLogger(instance);
+    }
+
+    setup();
+
+    instance = {
+    };
+
+    return instance;
+}
+OfflineIndexDBManifestParser.__dashjs_factory_name = 'OfflineIndexDBManifestParser';
+export default FactoryMaker.getSingletonFactory(OfflineIndexDBManifestParser);

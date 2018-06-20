@@ -42,10 +42,11 @@ function URLUtils() {
 
     let resolveFunction;
 
-    const schemeRegex = /^[a-z][a-z0-9+\-.]*:/i;
+    const schemeRegex = /^[a-z][a-z0-9+\-_.]*:/i;
     const httpUrlRegex = /^https?:\/\//i;
     const httpsUrlRegex = /^https:\/\//i;
-    const originRegex = /^([a-z][a-z0-9+\-.]*:\/\/[^\/]+)\/?/i;
+    const offlineUrlRegex = /^offline_indexdb:\/\//i;
+    const originRegex = /^([a-z][a-z0-9+\-_.]*:\/\/[^\/]+)\/?/i;
 
     /**
      * Resolves a url given an optional base url
@@ -61,7 +62,9 @@ function URLUtils() {
     const nativeURLResolver = (url, baseUrl) => {
         try {
             // this will throw if baseurl is undefined, invalid etc
-            return new window.URL(url, baseUrl).toString();
+            if (offlineUrlRegex.test(baseUrl)) {
+                return baseUrl + url;
+            }else return new window.URL(url, baseUrl).toString();
         } catch (e) {
             return url;
         }
@@ -165,6 +168,27 @@ function URLUtils() {
     }
 
     /**
+     * Returns a string that contains the fragment of a URL without scheme,
+     * if determinable.
+     * @param {string} url - full url
+     * @return {string}
+     * @memberof module:URLUtils
+     * @instance
+     */
+    function removeHostname(url) {
+        console.log('removeHostname', url)
+        if (offlineUrlRegex.test(url)) {
+            //lecture
+            url = url.replace(/(^\w+:|^)\/\//, '')
+        } else {
+            let urlParts = /^(?:\w+\:\/\/)?([^\/]+)(.*)$/.exec(url); //[1] = host / [2] = path
+            url = urlParts[2].substring(1);
+        }
+        console.log(url);
+        return url;
+    }
+
+    /**
      * Returns a string that contains the scheme of a URL, if determinable.
      * @param {string} url - full url
      * @return {string}
@@ -189,7 +213,11 @@ function URLUtils() {
      * @instance
      */
     function isRelative(url) {
-        return !schemeRegex.test(url);
+        console.log('isRelative ' + url, !schemeRegex.test(url), offlineUrlRegex.test(url), false);
+        if (offlineUrlRegex.test(url)) {
+            return false;
+        }
+            return !schemeRegex.test(url);
     }
 
     /**
@@ -237,6 +265,17 @@ function URLUtils() {
         return httpsUrlRegex.test(url);
     }
 
+      /**
+     * Determines whether the supplied url is an offline adress
+     * @return {bool}
+     * @param {string} url
+     * @memberof module:URLUtils
+     * @instance
+     */
+    function isOfflineURL(url) {
+        return offlineUrlRegex.test(url);
+    }
+
     /**
      * Resolves a url given an optional base url
      * @return {string}
@@ -260,6 +299,8 @@ function URLUtils() {
         isSchemeRelative:   isSchemeRelative,
         isHTTPURL:          isHTTPURL,
         isHTTPS:            isHTTPS,
+        isOfflineURL:       isOfflineURL,
+        removeHostname:     removeHostname,
         resolve:            resolve
     };
 

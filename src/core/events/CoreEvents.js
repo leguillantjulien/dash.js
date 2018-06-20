@@ -49,6 +49,7 @@ class CoreEvents extends EventsBase {
         this.CURRENT_TRACK_CHANGED = 'currentTrackChanged';
         this.DATA_UPDATE_COMPLETED = 'dataUpdateCompleted';
         this.DATA_UPDATE_STARTED = 'dataUpdateStarted';
+        this.FRAGMENT_COMPLETED = 'fragmentCompleted',
         this.INITIALIZATION_LOADED = 'initializationLoaded';
         this.INIT_FRAGMENT_LOADED = 'initFragmentLoaded';
         this.INIT_REQUESTED = 'initRequested';
@@ -58,8 +59,6 @@ class CoreEvents extends EventsBase {
         this.LOADING_PROGRESS = 'loadingProgress';
         this.LOADING_DATA_PROGRESS = 'loadingDataProgress';
         this.LOADING_ABANDONED = 'loadingAborted';
-        this.LOADING_OFFLINE_COMPLETED = 'loadingOfflineCompleted';
-        this.LOADING_ONLINE_COMPLETED = 'loadingOnlineCompleted';
         this.MANIFEST_UPDATED = 'manifestUpdated';
         this.MEDIA_FRAGMENT_LOADED = 'mediaFragmentLoaded';
         this.QUOTA_EXCEEDED = 'quotaExceeded';

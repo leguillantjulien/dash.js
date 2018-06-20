@@ -30,6 +30,9 @@
  */
 import Constants from './constants/Constants';
 import XlinkController from './controllers/XlinkController';
+import URLLoader from './net/URLLoader';
+import OfflineController from './controllers/OfflineController';
+import IndexDBOfflineLoader from './net/IndexDBOfflineLoader';
 import HTTPLoader from './net/HTTPLoader';
 import URLUtils from './utils/URLUtils';
 import TextRequest from './vo/TextRequest';
@@ -44,7 +47,6 @@ import Debug from '../core/Debug';
 const MANIFEST_LOADER_ERROR_PARSING_FAILURE = 1;
 const MANIFEST_LOADER_ERROR_LOADING_FAILURE = 2;
 const MANIFEST_LOADER_MESSAGE_PARSING_FAILURE = 'parsing failed';
-const OFFLINE_MANIFEST = 'offline:manifest';
 
 function ManifestLoader(config) {
 
@@ -55,8 +57,9 @@ function ManifestLoader(config) {
 
     let instance,
         logger,
-        httpLoader,
+        urlLoader,
         xlinkController,
+        offlineController,
         parser;
     let mssHandler = config.mssHandler;
     let errHandler = config.errHandler;
@@ -65,11 +68,15 @@ function ManifestLoader(config) {
         logger = Debug(context).getInstance().getLogger(instance);
         eventBus.on(Events.XLINK_READY, onXlinkReady, instance);
 
-        httpLoader = HTTPLoader(context).create({
-            errHandler: errHandler,
-            metricsModel: config.metricsModel,
-            mediaPlayerModel: config.mediaPlayerModel,
-            requestModifier: config.requestModifier
+        urlLoader = URLLoader(context).create({
+            httpLoader: HTTPLoader(context).create({
+                errHandler: config.errHandler,
+                metricsModel: config.metricsModel,
+                mediaPlayerModel: config.mediaPlayerModel,
+                requestModifier: config.requestModifier,
+                useFetch: config.mediaPlayerModel.getLowLatencyEnabled()
+            }),
+            indexDBOfflineLoader: IndexDBOfflineLoader(context).create()
         });
 
         xlinkController = XlinkController(context).create({
@@ -78,7 +85,7 @@ function ManifestLoader(config) {
             mediaPlayerModel: config.mediaPlayerModel,
             requestModifier: config.requestModifier
         });
-
+        offlineController = OfflineController(context).getInstance();
         parser = null;
     }
 
@@ -109,15 +116,9 @@ function ManifestLoader(config) {
 
     function load(url) {
 
-        if (url.includes(OFFLINE_MANIFEST)) {
-            console.log('offline Manifest');
+        const request = new TextRequest(url, HTTPRequest.MPD_TYPE);
 
-            //TODO traiter le manifest avec le bon loader + init IndexDB
-        } else {
-            console.log('online Manifest');
-            const request = new TextRequest(url, HTTPRequest.MPD_TYPE);
-
-            httpLoader.load({
+            urlLoader.load({
                 request: request,
                 success: function (data, textStatus, responseURL) {
                     // Manage situations in which success is called after calling reset
@@ -136,7 +137,7 @@ function ManifestLoader(config) {
                         // usually this case will be caught and resolved by
                         // responseURL above but it is not available for IE11 and Edge/12 and Edge/13
                         // baseUri must be absolute for BaseURL resolution later
-                        if (urlUtils.isRelative(url)) {
+                        if (urlUtils.isRelative(url) && !urlUtils.isOfflineURL(url)) {
                             url = urlUtils.resolve(url, window.location.href);
                         }
 
@@ -198,6 +199,10 @@ function ManifestLoader(config) {
                         manifest.baseUri = baseUri;
                         manifest.loadedTime = new Date();
                         xlinkController.resolveManifestOnLoad(manifest);
+
+                        if (!urlUtils.isOfflineURL(manifest.baseUri)) {
+                            offlineController.createOfflineManifest(baseUri,data);
+                        }
                     } else {
                         eventBus.trigger(
                             Events.INTERNAL_MANIFEST_LOADED, {
@@ -222,7 +227,6 @@ function ManifestLoader(config) {
                     );
                 }
             });
-        }
     }
 
     function reset() {
@@ -233,9 +237,9 @@ function ManifestLoader(config) {
             xlinkController = null;
         }
 
-        if (httpLoader) {
-            httpLoader.abort();
-            httpLoader = null;
+        if (urlLoader) {
+            urlLoader.abort();
+            urlLoader = null;
         }
 
         if (mssHandler) {

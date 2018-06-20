@@ -47,16 +47,17 @@ function FragmentLoader(config) {
     const eventBus = EventBus(context).getInstance();
 
     let instance,
-    urlLoader;
+        urlLoader;
 
     function setup() {
-        eventBus.on(Events.LOADING_ONLINE_COMPLETED, onLoadingOnlineCompleted, instance);
         urlLoader = URLLoader(context).create({
-            errHandler: config.errHandler,
-            metricsModel: config.metricsModel,
-            mediaPlayerModel: config.mediaPlayerModel,
-            requestModifier: config.requestModifier,
-            useFetch: config.mediaPlayerModel.getLowLatencyEnabled()
+            httpLoader: HTTPLoader(context).create({
+                errHandler: config.errHandler,
+                metricsModel: config.metricsModel,
+                mediaPlayerModel: config.mediaPlayerModel,
+                requestModifier: config.requestModifier,
+                useFetch: config.mediaPlayerModel.getLowLatencyEnabled()
+            })
         });
     }
 
@@ -72,8 +73,8 @@ function FragmentLoader(config) {
 
         if (request) {
             let headRequest = new HeadRequest(request.url);
-
-            httpLoader.load({
+            console.log('FragmentLoader')
+            urlLoader.load({
                 request: headRequest,
                 success: function () {
                     report(true);
@@ -89,8 +90,50 @@ function FragmentLoader(config) {
 
     function load(request) {
 
+        const report = function (data, error) {
+            eventBus.trigger(Events.LOADING_COMPLETED, {
+                request: request,
+                response: data || null,
+                error: error || null,
+                sender: instance
+            });
+        };
+
         if (request) {
-            urlLoader.registerNetworkLoader(request);
+            urlLoader.load({
+                request: request,
+                progress: function (data) {
+                    eventBus.trigger(Events.LOADING_PROGRESS, {
+                        request: request
+                    });
+                    if (data) {
+                        eventBus.trigger(Events.LOADING_DATA_PROGRESS, {
+                            request: request,
+                            response: data || null,
+                            error: null,
+                            sender: instance
+                        });
+                    }
+                },
+                success: function (data) {
+                    report(data);
+                },
+                error: function (request, statusText, errorText) {
+                    report(
+                        undefined,
+                        new DashJSError(
+                            FRAGMENT_LOADER_ERROR_LOADING_FAILURE,
+                            errorText,
+                            statusText
+                        )
+                    );
+                },
+                abort: function (request) {
+                    if (request) {
+                        eventBus.trigger(Events.LOADING_ABANDONED, {request: request, mediaType: request.mediaType, sender: instance});
+                    }
+                }
+            });
         } else {
             report(
                 undefined,
@@ -102,25 +145,16 @@ function FragmentLoader(config) {
         }
     }
 
-    function onLoadingOnlineCompleted(e) {
-        eventBus.trigger(Events.LOADING_COMPLETED, {
-            request: e.request,
-            response: e.response,
-            error: e.error,
-            sender: this
-        });
-    }
-
     function abort() {
-        if (httpLoader) {
-            httpLoader.abort();
+        if (urlLoader) {
+            urlLoader.abort();
         }
     }
 
     function reset() {
-        if (httpLoader) {
-            httpLoader.abort();
-            httpLoader = null;
+        if (urlLoader) {
+            urlLoader.abort();
+            urlLoader = null;
         }
     }
 
