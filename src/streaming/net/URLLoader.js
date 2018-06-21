@@ -30,7 +30,7 @@
  */
 import FactoryMaker from '../../core/FactoryMaker';
 import URLUtils from '../utils/URLUtils';
-import IndexDBOfflineLoader from './IndexDBOfflineLoader';
+import IndexDBOfflineLoader from '../../offline/net/IndexDBOfflineLoader';
 
 function URLLoader(cfg) {
 

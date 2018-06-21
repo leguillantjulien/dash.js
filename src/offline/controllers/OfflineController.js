@@ -28,40 +28,89 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-
-import EventBus from '../../core/EventBus';
-import Events from '../../core/events/Events';
-import FactoryMaker from '../../core/FactoryMaker';
-import Debug from '../../core/Debug';
+import EventBus from './../../core/EventBus';
+import Events from './../../core/events/Events';
+import FactoryMaker from './../../core/FactoryMaker';
+import Debug from './../../core/Debug';
+import ManifestUpdater from './../../streaming/ManifestUpdater';
+import OfflineStreamDownloader from './../net/OfflineStreamDownloader';
 import OfflineStoreController from './OfflineStoreController';
-import URLUtils from './../utils/URLUtils';
+import URLUtils from './../../streaming/utils/URLUtils';
 
 function OfflineController(config) {
 
     config = config || {};
     const context = this.context;
     const eventBus = EventBus(context).getInstance();
-    const urlUtils = URLUtils(context).getInstance();
     const Entities = require('html-entities').XmlEntities;
 
     let instance,
         manifestLoader,
+        manifestUpdater,
         offlineStoreController,
+        offlineStreamDownloader,
+        urlUtils,
         logger;
 
-    offlineStoreController = OfflineStoreController(context).getInstance();
-
     function setup() {
+        offlineStoreController = OfflineStoreController(context).getInstance();
+        manifestUpdater = ManifestUpdater(context).create();
         logger = Debug(context).getInstance().getLogger(instance);
-        //eventBus.on(Events.MANIFEST_UPDATED, createOfflineManifest, instance);
+        eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance); //comment for offline play
         eventBus.on(Events.LOADING_COMPLETED, storeFragment, instance);
         eventBus.on(Events.FRAGMENT_COMPLETED, storeFragment, instance);
-        //eventBus.on(Events.STREAM_COMPLETED, createOfflineManifest, instance);
+        eventBus.on(Events.STREAM_COMPLETED, createOfflineManifest, instance);
+        urlUtils = URLUtils(context).getInstance();
 
     }
 
+    function setConfig(config) {
+        if (!config) return;
+
+        if (config.manifestLoader) {
+            manifestLoader = config.manifestLoader;
+        }
+    }
+
+    function load(url) {
+        manifestLoader.load(url);
+    }
+
+    function onManifestUpdated(e) {
+        logger.info('onManifestUpdated' + e);
+
+        createOfflineStreamDownloader(mediaInfo, mediaSource);
+
+
+    }
+
+    function createOfflineStreamDownloader(mediaInfo,mediaSource) {
+        offlineStreamDownloader = OfflineStreamDownloader(context).create({
+            type: mediaInfo.type,
+            mimeType: mediaInfo.mimeType,
+            timelineConverter: timelineConverter,
+            adapter: adapter,
+            manifestModel: manifestModel,
+            dashManifestModel: dashManifestModel,
+            mediaPlayerModel: mediaPlayerModel,
+            metricsModel: metricsModel,
+            dashMetrics: config.dashMetrics,
+            baseURLController: config.baseURLController,
+            abrController: abrController,
+            playbackController: playbackController,
+            mediaController: mediaController,
+            textController: textController,
+            errHandler: errHandler
+        });
+
+        offlineStreamDownloader.initialize(mediaSource);
+        offlineStreamDownloader.start(e);
+    }
+
     function createOfflineManifest(newBaseURL, XMLManifest) {
-        logger.info('createOfflineManifest' , newBaseURL);
+        logger.info('createOfflineManifest', newBaseURL);
+
+        /*
         newBaseURL = 'offline_indexdb://' + urlUtils.removeHostname(newBaseURL)
         logger.info(XMLManifest);
         let DOM = new DOMParser().parseFromString(XMLManifest, "application/xml");
@@ -78,6 +127,7 @@ function OfflineController(config) {
             let encodedManifest = new Entities().encode(new XMLSerializer().serializeToString(DOM));
             storeOfflineManifest(encodedManifest);
         }
+        */
     }
 
     function storeFragment(e) {
@@ -90,11 +140,13 @@ function OfflineController(config) {
     }
 
     function storeOfflineManifest(e) {
-        offlineStoreController.storeOfflineManifest(e
-);
+        offlineStoreController.storeOfflineManifest(e);
     }
 
     instance = {
+        load: load,
+        onManifestUpdated: onManifestUpdated,
+        setConfig: setConfig,
         storeFragment: storeFragment,
         createOfflineManifest: createOfflineManifest,
         storeOfflineManifest: storeOfflineManifest

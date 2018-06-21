@@ -45,7 +45,7 @@ import ManifestModel from './models/ManifestModel';
 import MediaPlayerModel from './models/MediaPlayerModel';
 import MetricsModel from './models/MetricsModel';
 import AbrController from './controllers/AbrController';
-import OfflineController from './controllers/OfflineController';
+import OfflineController from '../offline/controllers/OfflineController';
 import VideoModel from './models/VideoModel';
 import DOMStorage from './utils/DOMStorage';
 import Debug from './../core/Debug';
@@ -1896,6 +1896,20 @@ function MediaPlayer() {
         return mediaPlayerModel.getManifestUpdateRetryInterval();
     }
 
+    function record(manifestURL) {
+        logger.info('record', manifestURL);
+        if (!offlineController) {
+            offlineController = OfflineController(context).getInstance();
+        }
+        const manifestLoader = createManifestLoader();
+
+        offlineController.setConfig({
+            manifestLoader: manifestLoader
+        });
+
+        offlineController.load(manifestURL);
+    }
+
     /*
     ---------------------------------------------------------------------------
 
@@ -3006,7 +3020,8 @@ function MediaPlayer() {
         getUseDeadTimeLatencyForAbr: getUseDeadTimeLatencyForAbr,
         setUseDeadTimeLatencyForAbr: setUseDeadTimeLatencyForAbr,
         getThumbnail: getThumbnail,
-        reset: reset
+        reset: reset,
+        record: record
     };
 
     setup();

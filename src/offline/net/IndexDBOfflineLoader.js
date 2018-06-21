@@ -28,44 +28,54 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-import EventBus from '../../core/EventBus';
 import FactoryMaker from '../../core/FactoryMaker';
-import Debug from '../../core/Debug';
-import IndexDBStore from './../IndexDBStore';
+import IndexDBStore from '../storage/IndexDBStore';
+import URLUtils from './../../streaming/utils/URLUtils';
 
-function OfflineStoreController(config) {
+const Entities = require('html-entities').XmlEntities;
+function IndexDBOfflineLoader() {
 
-    config = config || {};
     const context = this.context;
-    const eventBus = EventBus(context).getInstance();
+    const urlUtils = URLUtils(context).getInstance();
 
     let instance,
-        logger,
         indexDBStore;
 
     indexDBStore = IndexDBStore(context).create();
 
-    function setup() {
-        logger = Debug(context).getInstance().getLogger(instance);
-    }
 
-    function storeFragment(fragmentId, fragmentData) {
-        indexDBStore.storeFragment(fragmentId,fragmentData);
-    }
-
-    function storeOfflineManifest(manifest) {
-        indexDBStore.storeManifest(manifest);
+    function load(config) {
+        if (config.request) {
+            let key = urlUtils.removeHostname(config.request.url);
+            if (key % 1 === 0) {
+                console.log('loading manifest ...');
+                indexDBStore.readManifestByKey(key).then(function (manifest) {
+                    let manifestDecoded = new Entities().decode(manifest);
+                    config.success(manifestDecoded, null, config.request.url);
+                }).catch(function (err) {
+                    config.error(err);
+                    throw new Error('Cannot find a minifest with this key : ' + key);
+                });
+            } else {
+                console.log('loading fragments ...');
+                indexDBStore.readFragmentByKey(key).then(function (fragment) {
+                    config.success(fragment, null, config.request.url);
+                }).catch(function (err) {
+                    console.log('err catch frag')
+                    config.error(err);
+                    throw new Error('Cannot find a fragment with this key : ' + key);
+                });;
+            }
+        }
     }
 
     instance = {
-        storeFragment: storeFragment,
-        storeOfflineManifest: storeOfflineManifest
+        load: load
     };
-
-    setup();
 
     return instance;
 }
 
-OfflineStoreController.__dashjs_factory_name = 'OfflineStoreController';
-export default FactoryMaker.getSingletonFactory(OfflineStoreController);
+IndexDBOfflineLoader.__dashjs_factory_name = 'IndexDBOfflineLoader';
+const factory = FactoryMaker.getClassFactory(IndexDBOfflineLoader);
+export default factory;

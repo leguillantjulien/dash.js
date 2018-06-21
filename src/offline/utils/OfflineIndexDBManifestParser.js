@@ -28,10 +28,10 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-import FactoryMaker from '../../core/FactoryMaker';
-import Debug from '../../core/Debug';
-import IndexDBStore from './../IndexDBStore';
-import URLUtils from './URLUtils';
+import FactoryMaker from './../../core/FactoryMaker';
+import Debug from './../../core/Debug';
+import IndexDBStore from './storage/IndexDBStore';
+import URLUtils from './../../streaming/utils/URLUtils';
 
 function OfflineIndexDBManifestParser() {
     const context = this.context;

@@ -484,11 +484,7 @@ app.controller('DashController', function ($scope, sources, contributors, dashif
             protData = null;
         }
 
-        // Check if persistent license session ID is stored for current stream
-        var sessionId = $scope.persistentSessionId[$scope.selectedItem.url];
-        if (sessionId) {
-            protData[$scope.selectedKeySystem].sessionId = sessionId;
-        }
+        $scope.player.record($scope.selectedItem.url);
     }
 
     $scope.changeTrackSwitchMode = function (mode, type) {
