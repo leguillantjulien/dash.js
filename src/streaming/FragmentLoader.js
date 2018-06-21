@@ -102,14 +102,14 @@ function FragmentLoader(config) {
         if (request) {
             urlLoader.load({
                 request: request,
-                progress: function (data) {
+                progress: function (event) {
                     eventBus.trigger(Events.LOADING_PROGRESS, {
                         request: request
                     });
-                    if (data) {
+                    if (event.data) {
                         eventBus.trigger(Events.LOADING_DATA_PROGRESS, {
                             request: request,
-                            response: data || null,
+                            response: event.data || null,
                             error: null,
                             sender: instance
                         });

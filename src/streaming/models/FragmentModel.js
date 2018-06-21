@@ -84,8 +84,18 @@ function FragmentModel(config) {
             return isNaN(req1.index) && isNaN(req2.index) && (req1.quality === req2.quality);
         };
 
+        const isInBuffer = function (req) {
+            return streamProcessor.timeIsBuffered(req.startTime + getRequestThreshold(req));
+        };
+
         const check = function (requests) {
             let isLoaded = false;
+
+            // This fixes buffer out of sync in Safari
+            if (!isInBuffer(request) && request.action !== FragmentRequest.ACTION_COMPLETE) {
+                return isLoaded;
+            }
+
             requests.some(req => {
                 if (isEqualMedia(request, req) || isEqualInit(request, req) || isEqualComplete(request, req)) {
                     isLoaded = true;
@@ -161,7 +171,7 @@ function FragmentModel(config) {
 
     function removeExecutedRequestsAfterTime(time) {
         executedRequests = executedRequests.filter(req => {
-            return isNaN(req.startTime) || (time !== undefined ? req.startTime <= time : false);
+            return isNaN(req.startTime) || (time !== undefined ? req.startTime < time : false);
         });
     }
 
