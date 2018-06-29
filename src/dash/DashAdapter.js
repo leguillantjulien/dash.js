@@ -48,6 +48,14 @@ function DashAdapter() {
         reset();
     }
 
+
+    function getVoAdaptations() {
+        return voAdaptations;
+    }
+
+    function getVoPeriods() {
+        return voPeriods;
+    }
     function setConfig(config) {
         if (!config) return;
 
@@ -533,6 +541,8 @@ function DashAdapter() {
         getEvent: getEvent,
         setConfig: setConfig,
         updatePeriods: updatePeriods,
+        getVoAdaptations: getVoAdaptations,
+        getVoPeriods: getVoPeriods,
         reset: reset
     };
 
