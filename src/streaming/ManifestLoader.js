@@ -85,7 +85,6 @@ function ManifestLoader(config) {
             mediaPlayerModel: config.mediaPlayerModel,
             requestModifier: config.requestModifier
         });
-        offlineController = OfflineController(context).getInstance();
         parser = null;
     }
 
@@ -200,9 +199,9 @@ function ManifestLoader(config) {
                         manifest.loadedTime = new Date();
                         xlinkController.resolveManifestOnLoad(manifest);
 
-                        if (!urlUtils.isOfflineURL(manifest.baseUri)) {
-                            offlineController.createOfflineManifest(baseUri,data);
-                        }
+                        // if (!urlUtils.isOfflineURL(manifest.baseUri)) {
+                        //     offlineController.createOfflineManifest(baseUri,data);
+                        // }
                     } else {
                         eventBus.trigger(
                             Events.INTERNAL_MANIFEST_LOADED, {
