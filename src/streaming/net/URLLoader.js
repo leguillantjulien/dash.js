@@ -46,7 +46,6 @@ function URLLoader(cfg) {
     indexDBOfflineLoader = IndexDBOfflineLoader(context).create();
 
     function load(config) {
-        console.log('URLLoader ' + JSON.stringify(config));
         if (urlUtils.isOfflineURL(config.request.url)) {
             indexDBOfflineLoader.load(config);
         } else{

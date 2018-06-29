@@ -60,18 +60,14 @@ function IndexDBStore(cfg) {
     }
 
     function readFragmentByKey(key) {
-        console.log('readFragmentByKey', key)
         return fragmentStore.getItem(key).then(function (value) {
-          console.log(value)
           return Promise.resolve(value);
         }).catch(function(err) {
-            logger.info(err);
           return Promise.reject(err);
       });
     }
 
     function readManifestByKey(key) {
-      console.log('readManifestByKey ',key)
         return manifestStore.getItem(key).then(function (value) {
           return Promise.resolve(value);
         }).catch(function(err) {
@@ -118,7 +114,7 @@ function IndexDBStore(cfg) {
                 return Promise.reject(err);
             });
         }).catch(function (err) {
-            return Promise.reject();
+            return Promise.reject(err);
         });
     }
 

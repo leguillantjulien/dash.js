@@ -37,7 +37,6 @@ function OfflineStoreController(config) {
 
     config = config || {};
     const context = this.context;
-    const eventBus = EventBus(context).getInstance();
 
     let instance,
         logger,

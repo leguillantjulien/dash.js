@@ -61,10 +61,9 @@ function IndexDBOfflineLoader() {
                 indexDBStore.readFragmentByKey(key).then(function (fragment) {
                     config.success(fragment, null, config.request.url);
                 }).catch(function (err) {
-                    console.log('err catch frag')
                     config.error(err);
                     throw new Error('Cannot find a fragment with this key : ' + key);
-                });;
+                });
             }
         }
     }

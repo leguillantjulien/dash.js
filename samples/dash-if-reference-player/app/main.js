@@ -472,18 +472,6 @@ app.controller('DashController', function ($scope, sources, contributors, dashif
 
     $scope.doDownload = function () {
         $scope.initSession();
-
-        var protData = {};
-        if ($scope.selectedItem.hasOwnProperty('protData')) {
-            protData = $scope.selectedItem.protData;
-        } else if ($scope.drmLicenseURL !== '' && $scope.drmKeySystem !== '') {
-            protData[$scope.drmKeySystem] = {
-                serverURL: $scope.drmLicenseURL
-            };
-        } else {
-            protData = null;
-        }
-
         $scope.player.record($scope.selectedItem.url);
     }
 

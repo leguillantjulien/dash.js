@@ -176,15 +176,12 @@ function URLUtils() {
      * @instance
      */
     function removeHostname(url) {
-        console.log('removeHostname', url)
         if (offlineUrlRegex.test(url)) {
-            //lecture
-            url = url.replace(/(^\w+:|^)\/\//, '')
+            url = url.replace(/(^\w+:|^)\/\//, '');
         } else {
             let urlParts = /^(?:\w+\:\/\/)?([^\/]+)(.*)$/.exec(url); //[1] = host / [2] = path
             url = urlParts[2].substring(1);
         }
-        console.log(url);
         return url;
     }
 
@@ -213,7 +210,6 @@ function URLUtils() {
      * @instance
      */
     function isRelative(url) {
-        console.log('isRelative ' + url, !schemeRegex.test(url), offlineUrlRegex.test(url), false);
         if (offlineUrlRegex.test(url)) {
             return false;
         }
