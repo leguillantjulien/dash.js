@@ -1897,17 +1897,57 @@ function MediaPlayer() {
     }
 
     function record(manifestURL) {
-        logger.info('record', manifestURL);
+        createRecordControllers();
+        offlineController.load(manifestURL);
+    }
+
+    function createRecordControllers() {
+        errHandler = ErrorHandler(context).getInstance();
+
+        const manifestLoader = createManifestLoader();
+
+        // init some controllers and models
+        timelineConverter = TimelineConverter(context).getInstance();
+
+        if (!abrController) {
+            abrController = AbrController(context).getInstance();
+        }
+
+        adapter = DashAdapter(context).getInstance();
+        dashManifestModel = DashManifestModel(context).getInstance({
+            mediaController: mediaController,
+            timelineConverter: timelineConverter,
+            adapter: adapter
+        });
+        manifestModel = ManifestModel(context).getInstance();
+        dashMetrics = DashMetrics(context).getInstance({
+            manifestModel: manifestModel,
+            dashManifestModel: dashManifestModel
+        });
+
+        adapter.setConfig({
+            dashManifestModel: dashManifestModel
+        });
+
+        abrController.setConfig({
+            dashManifestModel: dashManifestModel,
+            manifestModel: manifestModel,
+            adapter: adapter
+        });
+
         if (!offlineController) {
             offlineController = OfflineController(context).getInstance();
         }
-        const manifestLoader = createManifestLoader();
 
         offlineController.setConfig({
-            manifestLoader: manifestLoader
+            manifestLoader: manifestLoader,
+            manifestModel: manifestModel,
+            dashManifestModel: dashManifestModel,
+            adapter: adapter,
+            errHandler: errHandler,
+            timelineConverter: timelineConverter,
+            abrController: abrController,
         });
-
-        offlineController.load(manifestURL);
     }
 
     /*
