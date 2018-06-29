@@ -28,299 +28,344 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-import ManifestUpdater from './../../streaming/ManifestUpdater';
 import EventBus from './../../core/EventBus';
+import Debug from './../../core/Debug';
+import Events from './../../core/events/Events';
 import FactoryMaker from './../../core/FactoryMaker';
-import RepresentationController from './../../dash/controllers/RepresentationController';
 import DashHandler from './../../dash/DashHandler';
-import FragmentModel from './../../streaming/models/FragmentModel';
+import Constants from './../../streaming/constants/Constants';
+import Representation from './../../dash/vo/Representation';
+import DashConstants from '../../dash/constants/DashConstants';
+import DashJSError from '../../streaming/vo/DashJSError';
 
-function OfflineStreamController(config) {
+function OfflineStreamDownloader(config) {
 
-    const context = this.context;
+    config = config || {};
+    let context = this.context;
 
-    let indexHandler;
-    let type = config.type;
-    let errHandler = config.errHandler;
-    let mimeType = config.mimeType;
-    let timelineConverter = config.timelineConverter;
-    let adapter = config.adapter;
-    let manifestModel = config.manifestModel;
-    let mediaPlayerModel = config.mediaPlayerModel;
-    let stream = config.stream;
-    let abrController = config.abrController;
-    let playbackController = config.playbackController;
-    let streamController = config.streamController;
-    let mediaController = config.mediaController;
-    let textController = config.textController;
-    let domStorage = config.domStorage;
-    let metricsModel = config.metricsModel;
-    let dashMetrics = config.dashMetrics;
-    let dashManifestModel = config.dashManifestModel;
+    let instance,
+        adapter,
+        logger,
+        indexHandler,
+        type,
+        errHandler,
+        eventBus,
+        mimeType,
+        manifestModel,
+        baseURLController,
+        fragmentModel,
+        dashManifestModel,
+        offlineController,
+        timelineConverter,
+        mediaInfo,
+        mediaInfoArr,
+        abrController,
+        updating,
+        rulesContext,
+        voAvailableRepresentations,
+        realAdaptationIndex,
+        realAdaptation,
+        currentVoRepresentation,
+        abrRulesCollection,
+        stream;
 
-    let eventBus,
-        representationController,
-        dashHandler;
+    function setConfig(config) {
 
-    representationController = RepresentationController(context).create();
+        if (!config) return;
 
-    dashHandler = DashHandler(context).create(config);
+        if (config.type) {
+            type = config.type;
+        }
 
-    function setup(){
-        eventBus = EventBus(context).getInstance();
-        eventBus.on(Events.FRAGMENT_COMPLETED, onManifestUpdated, instance);
-        eventBus.on(Events.STREAM_COMPLETED, onManifestUpdated, instance);
+        if (config.stream) {
+            stream = config.stream;
+        }
+
+        if (config.adapter) {
+            adapter = config.adapter;
+        }
+
+        if (config.errHandler) {
+            errHandler = config.errHandler;
+        }
+
+        if (config.mimeType) {
+            mimeType = config.mimeType;
+        }
+
+        if (config.timelineConverter) {
+            timelineConverter = config.timelineConverter;
+        }
+
+        if (config.adapter) {
+            adapter = config.adapter;
+        }
+
+        if (config.manifestModel) {
+            manifestModel = config.manifestModel;
+        }
+
+        if (config.baseURLController) {
+            baseURLController = config.baseURLController;
+        }
+
+        if (config.abrController) {
+            abrController = config.abrController;
+        }
+
+        if (config.metricsModel) {
+            metricsModel = config.metricsModel;
+        }
+
+        if (config.dashManifestModel) {
+            dashManifestModel = config.dashManifestModel;
+        }
+
+        if (config.fragmentModel) {
+            fragmentModel = config.fragmentModel;
+        }
+
+        if (config.offlineController) {
+            offlineController = config.offlineController;
+        }
 
     }
 
-    function initialize(mediaSource) {
+    function setup() {
+        mediaInfoArr = [];
+        voAvailableRepresentations = [];
+        logger = Debug(context).getInstance().getLogger(instance);
+        eventBus = EventBus(context).getInstance();
+        eventBus.on(Events.FRAGMENT_COMPLETED, storeFragment, instance);
+        eventBus.on(Events.STREAM_COMPLETED, createOfflineManifest, instance);
+        eventBus.on(Events.REPRESENTATION_UPDATED, onRepresentationUpdated, instance);
+        eventBus.on(Events.FRAGMENT_COMPLETED, fragmentCompleted, instance);
+
+    }
+
+    function getStreamProcessor(){
+        return instance;
+    }
+    function storeFragment(e) {
+        logger.info('OnFragmentLoadingCompleted - Url:', e.request ? e.request.url : 'undefined');
+        logger.info('storeFragment');
+        logger.info(JSON.stringify(e));
+    }
+
+    function createOfflineManifest(e) {
+        logger.info('createOfflineManifest');
+        logger.info(JSON.stringify(e));
+    }
+
+    function fragmentCompleted(e){
+        console.log('fragmentCompleted',e)
+    }
+
+    function initialize() {
 
         indexHandler = DashHandler(context).create({
             mimeType: mimeType,
-            timelineConverter: timelineConverter,
-            dashMetrics: dashMetrics,
-            metricsModel: metricsModel,
-            mediaPlayerModel: mediaPlayerModel,
-            baseURLController: config.baseURLController,
-            errHandler: errHandler
+            baseURLController: baseURLController,
+            errHandler: errHandler,
+            timelineConverter: timelineConverter
         });
-
-        // initialize controllers
         indexHandler.initialize(instance);
         abrController.registerStreamType(type, instance);
 
         fragmentModel = stream.getFragmentController().getModel(type);
         fragmentModel.setStreamProcessor(instance);
+    }
 
-        bufferController = createBufferControllerForType(type);
-        scheduleController = ScheduleController(context).create({
-            type: type,
-            mimeType: mimeType,
-            metricsModel: metricsModel,
-            adapter: adapter,
-            dashMetrics: dashMetrics,
-            dashManifestModel: dashManifestModel,
-            timelineConverter: timelineConverter,
-            mediaPlayerModel: mediaPlayerModel,
-            abrController: abrController,
-            playbackController: playbackController,
-            streamController: streamController,
-            textController: textController,
-            streamProcessor: instance,
-            mediaController: mediaController
-        });
-        representationController = RepresentationController(context).create();
-        representationController.setConfig({
-            abrController: abrController,
-            domStorage: domStorage,
-            metricsModel: metricsModel,
-            dashMetrics: dashMetrics,
-            dashManifestModel: dashManifestModel,
-            manifestModel: manifestModel,
-            playbackController: playbackController,
-            timelineConverter: timelineConverter,
-            streamProcessor: instance
-        });
-        bufferController.initialize(mediaSource);
-        scheduleController.initialize();
-        representationController.initialize();
+    function getIndexHandler() {
+        return indexHandler;
+    }
+
+    function getFragmentController() {
+        return stream ? stream.getFragmentController() : null;
+    }
+
+    function getFragmentModel() {
+        return fragmentModel;
+    }
+
+    function addMediaInfo(newMediaInfo, selectNewMediaInfo) {
+        if (mediaInfoArr.indexOf(newMediaInfo) === -1) {
+            mediaInfoArr.push(newMediaInfo);
+        }
+
+        if (selectNewMediaInfo) {
+            this.selectMediaInfo(newMediaInfo);
+        }
+    }
+
+    function getMediaInfoArr() {
+        return mediaInfoArr;
+    }
+
+    function selectMediaInfo(newMediaInfo) {
+        if (newMediaInfo !== mediaInfo && (!newMediaInfo || !mediaInfo || (newMediaInfo.type === mediaInfo.type))) {
+            mediaInfo = newMediaInfo;
+        }
+        updateData();
+    }
+
+    function getPeriodForStreamInfo(streamInfo, voPeriodsArray) {
+        const ln = voPeriodsArray.length;
+
+        for (let i = 0; i < ln; i++) {
+            let voPeriod = voPeriodsArray[i];
+
+            if (streamInfo.id === voPeriod.id) return voPeriod;
+        }
+
+        return null;
+    }
+
+    function updateData() {
+        const selectedVoPeriod = getPeriodForStreamInfo(getStreamInfo(), adapter.getVoPeriods());
+        const voAdaptation = adapter.getDataForMedia(mediaInfo);
+        let id = mediaInfo ? mediaInfo.id : null;
+
+        if (adapter.getVoPeriods().length > 0) {
+            abrController.updateTopQualityIndex(mediaInfo);
+            realAdaptation = id ? dashManifestModel.getAdaptationForId(id, adapter.getVoPeriods()[0].mpd.manifest, selectedVoPeriod.index) : dashManifestModel.getAdaptationForIndex(mediaInfo.index, adapter.getVoPeriods()[0].mpd.manifest, selectedVoPeriod.index);
+            updateRepresentation(realAdaptation, voAdaptation, type);
+        }
+
     }
 
     function start() {
-        let representationQuality = representationController.getRepresentationForQuality();
-        request = dashHandler.getNextSegmentRequest(representation);
+        console.log('start')
+        let nextFragment,
+            request;
+        console.log('currentVoRepresentation', currentVoRepresentation);
+        let r2 = indexHandler.getInitRequest(currentVoRepresentation)
+        console.log(r2);
+        nextFragment = getNextFragment(currentVoRepresentation);
+        console.log('nextFragment', nextFragment);
+
+        request = indexHandler.getNextSegmentRequest(currentVoRepresentation);
+        console.log(request);
+        logger.debug('getNextFragment - request is ' + request.url);
+        fragmentModel.executeRequest(request);
     }
 
+    function updateRepresentation(newRealAdaptation, voAdaptation, type) {
+        const streamInfo = getStreamInfo();
+        const maxQuality = abrController.getTopQualityIndexFor(type, streamInfo.id);
+        console.log('maxQuality', maxQuality);
 
-    function initializeMediaForType(type, mediaSource) {
-        const allMediaForType = adapter.getAllMediaInfoForType(streamInfo, type);
+        updating = true;
+        eventBus.trigger(Events.DATA_UPDATE_STARTED, {sender: this});
 
-        let mediaInfo = null;
-        let initialMediaInfo;
-
-        if (!allMediaForType || allMediaForType.length === 0) {
-            logger.info('No ' + type + ' data.');
+        voAvailableRepresentations = updateRepresentations(voAdaptation);
+        currentVoRepresentation = getRepresentationForQuality(maxQuality);
+        console.log('currentVoRepresentation', currentVoRepresentation);
+        realAdaptation = newRealAdaptation;
+        console.log('realAdaptation', realAdaptation);
+        if (type !== Constants.VIDEO && type !== Constants.AUDIO && type !== Constants.FRAGMENTED_TEXT) {
+            updating = false;
+            console.log('DATA_UPDATE_COMPLETED');
+            eventBus.trigger(Events.DATA_UPDATE_COMPLETED, {sender: this, data: realAdaptation, currentRepresentation: currentVoRepresentation});
             return;
         }
 
-        for (let i = 0, ln = allMediaForType.length; i < ln; i++) {
-            mediaInfo = allMediaForType[i];
+        indexHandler.updateRepresentation(currentVoRepresentation, true); //Update only for the best Representation
+    }
 
-            if (type === Constants.EMBEDDED_TEXT) {
-                textController.addEmbeddedTrack(mediaInfo);
-            } else {
-                if (!isMediaSupported(mediaInfo)) continue;
-                mediaController.addTrack(mediaInfo);
+    function onRepresentationUpdated(e) {
+        console.log('onRepresentationUpdated', e);
+        if (e.sender.getStreamProcessor() !== instance || !isUpdating()) return;
+
+        let r = e.representation;
+        console.log('r : ', r);
+
+        if (isAllRepresentationsUpdated()) {
+            updating = false;
+        }
+            eventBus.trigger(Events.DATA_UPDATE_COMPLETED, {sender: this, data: realAdaptation, currentRepresentation: currentVoRepresentation});
+    }
+
+    function isAllRepresentationsUpdated() {
+        for (let i = 0, ln = voAvailableRepresentations.length; i < ln; i++) {
+            let segmentInfoType = voAvailableRepresentations[i].segmentInfoType;
+            if (voAvailableRepresentations[i].segmentAvailabilityRange === null || !Representation.hasInitialization(voAvailableRepresentations[i]) ||
+                ((segmentInfoType === DashConstants.SEGMENT_BASE || segmentInfoType === DashConstants.BASE_URL) && !voAvailableRepresentations[i].segments)
+            ) {
+                return false;
             }
         }
 
-        if (type === Constants.EMBEDDED_TEXT || mediaController.getTracksFor(type, streamInfo).length === 0) {
-            return;
-        }
-
-        if (type === Constants.IMAGE) {
-            thumbnailController = ThumbnailController(context).create({
-                dashManifestModel: dashManifestModel,
-                adapter: adapter,
-                baseURLController: config.baseURLController,
-                stream: instance
-            });
-            return;
-        }
-
-        mediaController.checkInitialMediaSettingsForType(type, streamInfo);
-        initialMediaInfo = mediaController.getCurrentTrackFor(type, streamInfo);
-
-        // TODO : How to tell index handler live/duration?
-        // TODO : Pass to controller and then pass to each method on handler?
-
-        createStreamProcessor(initialMediaInfo, allMediaForType, mediaSource);
+        return true;
     }
 
-    function initializeMedia(mediaSource) {
-        checkConfig();
-        let events;
-        let element = videoModel.getElement();
-
-        //if initializeMedia is called from a switch period, eventController could have been already created.
-        if (!eventController) {
-            eventController = EventController(context).create();
-
-            eventController.setConfig({
-                manifestModel: manifestModel,
-                manifestUpdater: manifestUpdater,
-                playbackController: playbackController
-            });
-            events = adapter.getEventsFor(streamInfo);
-            eventController.addInlineEvents(events);
-        }
-
-        isUpdating = true;
-
-        filterCodecs(Constants.VIDEO);
-        filterCodecs(Constants.AUDIO);
-
-        if (element === null || (element && (/^VIDEO$/i).test(element.nodeName))) {
-            initializeMediaForType(Constants.VIDEO, mediaSource);
-        }
-        initializeMediaForType(Constants.AUDIO, mediaSource);
-        initializeMediaForType(Constants.TEXT, mediaSource);
-        initializeMediaForType(Constants.FRAGMENTED_TEXT, mediaSource);
-        initializeMediaForType(Constants.EMBEDDED_TEXT, mediaSource);
-        initializeMediaForType(Constants.MUXED, mediaSource);
-        initializeMediaForType(Constants.IMAGE, mediaSource);
-
-        createBuffers();
-
-        //TODO. Consider initialization of TextSourceBuffer here if embeddedText, but no sideloadedText.
-
-        isMediaInitialized = true;
-        isUpdating = false;
-
-        if (streamProcessors.length === 0) {
-            const msg = 'No streams to play.';
-            errHandler.manifestError(msg, 'nostreams', manifestModel.getValue());
-            logger.fatal(msg);
-        } else {
-            checkIfInitializationCompleted();
-        }
+    function getQualityForRepresentation(voRepresentation) {
+        return voAvailableRepresentations.indexOf(voRepresentation);
     }
 
-    function createBufferControllerForType(type) {
-        let controller = null;
+    function updateRepresentations(voAdaptation) {
+        let voReps;
 
-        if (type === Constants.VIDEO || type === Constants.AUDIO) {
-            controller = BufferController(context).create({
-                type: type,
-                metricsModel: metricsModel,
-                mediaPlayerModel: mediaPlayerModel,
-                manifestModel: manifestModel,
-                errHandler: errHandler,
-                streamController: streamController,
-                mediaController: mediaController,
-                adapter: adapter,
-                textController: textController,
-                abrController: abrController,
-                playbackController: playbackController,
-                streamProcessor: instance
-            });
-        } else {
-            controller = TextBufferController(context).create({
-                type: type,
-                mimeType: mimeType,
-                metricsModel: metricsModel,
-                mediaPlayerModel: mediaPlayerModel,
-                manifestModel: manifestModel,
-                errHandler: errHandler,
-                streamController: streamController,
-                mediaController: mediaController,
-                adapter: adapter,
-                textController: textController,
-                abrController: abrController,
-                playbackController: playbackController,
-                streamProcessor: instance
-            });
-        }
+        realAdaptationIndex = dashManifestModel.getIndexForAdaptation(realAdaptation, voAdaptation.period.mpd.manifest, voAdaptation.period.index);
+        voReps = dashManifestModel.getRepresentationsForAdaptation(voAdaptation);
 
-        return controller;
+        return voReps;
     }
 
-
-    function createStreamProcessor(mediaInfo, allMediaForType, mediaSource, optionalSettings) {
-        let streamProcessor = StreamProcessor(context).create({
-            type: mediaInfo.type,
-            mimeType: mediaInfo.mimeType,
-            timelineConverter: timelineConverter,
-            adapter: adapter,
-            manifestModel: manifestModel,
-            dashManifestModel: dashManifestModel,
-            mediaPlayerModel: mediaPlayerModel,
-            metricsModel: metricsModel,
-            dashMetrics: config.dashMetrics,
-            baseURLController: config.baseURLController,
-            stream: instance,
-            abrController: abrController,
-            domStorage: config.domStorage,
-            playbackController: playbackController,
-            mediaController: mediaController,
-            streamController: config.streamController,
-            textController: textController,
-            errHandler: errHandler
-        });
-
-        streamProcessor.initialize(mediaSource);
-        abrController.updateTopQualityIndex(mediaInfo);
-
-        if (optionalSettings) {
-            streamProcessor.setBuffer(optionalSettings.buffer);
-            streamProcessor.getIndexHandler().setCurrentTime(optionalSettings.currentTime);
-            streamProcessors[optionalSettings.replaceIdx] = streamProcessor;
-        } else {
-            streamProcessors.push(streamProcessor);
-        }
-
-        if (optionalSettings && optionalSettings.ignoreMediaInfo) {
-            return;
-        }
-
-        if ((mediaInfo.type === Constants.TEXT || mediaInfo.type === Constants.FRAGMENTED_TEXT)) {
-            let idx;
-            for (let i = 0; i < allMediaForType.length; i++) {
-                if (allMediaForType[i].index === mediaInfo.index) {
-                    idx = i;
-                }
-                streamProcessor.addMediaInfo(allMediaForType[i]); //creates text tracks for all adaptations in one stream processor
-            }
-            streamProcessor.selectMediaInfo(allMediaForType[idx]); //sets the initial media info
-        } else {
-            streamProcessor.addMediaInfo(mediaInfo, true);
-        }
+    function getRepresentationForQuality(quality) {
+        return voAvailableRepresentations[quality];
     }
 
+    function getCurrentRepresentationInfo() {
+        return currentVoRepresentation;
+    }
+
+    function getRepresentationInfoForQuality(quality) {
+        console.log('getRepresentationInfoForQuality',quality)
+        return getRepresentationInfoForQuality(representationController, quality);
+    }
+
+    function getStreamInfo() {
+        return stream ? stream.getStreamInfo() : null;
+    }
+
+    function isUpdating() {
+        console.log('updating', updating);
+        return updating;
+    }
+
+    function getType() {
+        return type;
+    }
+
+    function getMediaInfo() {
+        return mediaInfo;
+    }
+
+    function getNextFragment(representation) {
+        console.log('getNextFragment', representation);
+        return indexHandler ? indexHandler.getNextSegmentRequest(representation) : null;
+    }
 
     instance = {
-        load: load,
+        initialize: initialize,
         setConfig: setConfig,
+        getIndexHandler: getIndexHandler,
+        addMediaInfo: addMediaInfo,
+        getCurrentRepresentationInfo: getCurrentRepresentationInfo,
+        getRepresentationInfoForQuality: getRepresentationInfoForQuality,
+        selectMediaInfo: selectMediaInfo,
+        getFragmentController: getFragmentController,
+        getFragmentModel: getFragmentModel,
+        getStreamInfo: getStreamInfo,
+        getMediaInfo: getMediaInfo,
+        getMediaInfoArr: getMediaInfoArr,
+        getType: getType,
+        isUpdating: isUpdating,
+        getRepresentationForQuality: getRepresentationForQuality,
+        getPeriodForStreamInfo: getPeriodForStreamInfo,
+        getNextFragment: getNextFragment,
+        getStreamProcessor: getStreamProcessor,
         start: start
     };
 
@@ -328,6 +373,6 @@ function OfflineStreamController(config) {
 
     return instance;
 }
-OfflineStreamController.__dashjs_factory_name = 'OfflineStreamController';
-const factory = FactoryMaker.getClassFactory(OfflineStreamController);
+OfflineStreamDownloader.__dashjs_factory_name = 'OfflineStreamDownloader';
+const factory = FactoryMaker.getClassFactory(OfflineStreamDownloader);
 export default factory;
