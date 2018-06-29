@@ -48,7 +48,6 @@ function IndexDBOfflineLoader() {
         if (config.request) {
             let key = urlUtils.removeHostname(config.request.url);
             if (key % 1 === 0) {
-                console.log('loading manifest ...');
                 indexDBStore.readManifestByKey(key).then(function (manifest) {
                     let manifestDecoded = new Entities().decode(manifest);
                     config.success(manifestDecoded, null, config.request.url);
@@ -57,7 +56,6 @@ function IndexDBOfflineLoader() {
                     throw new Error('Cannot find a minifest with this key : ' + key);
                 });
             } else {
-                console.log('loading fragments ...');
                 indexDBStore.readFragmentByKey(key).then(function (fragment) {
                     config.success(fragment, null, config.request.url);
                 }).catch(function (err) {
