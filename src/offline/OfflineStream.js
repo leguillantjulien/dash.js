@@ -32,14 +32,12 @@ import EventBus from './../core/EventBus';
 import Events from './../core/events/Events';
 import FactoryMaker from './../core/FactoryMaker';
 import Debug from './../core/Debug';
-import ManifestUpdater from './../streaming/ManifestUpdater';
-import ABRRulesCollection from './../streaming/rules/abr/ABRRulesCollection';
 import BaseURLController from './../streaming/controllers/BaseURLController';
 import FragmentController from './../streaming/controllers/FragmentController';
-import EventController from './../streaming/controllers/EventController';
 import OfflineStreamDownloader from './net/offlineStreamDownloader';
 import URLUtils from './../streaming/utils/URLUtils';
 import Constants from './../streaming/constants/Constants';
+import RequestModifier from './../streaming/utils/RequestModifier';
 
 
 function OfflineStream(config) {
@@ -47,18 +45,13 @@ function OfflineStream(config) {
     config = config || {};
     const context = this.context;
     const eventBus = EventBus(context).getInstance();
-    const DATA_UPDATE_FAILED_ERROR_CODE = 1;
 
     let instance,
         adapter,
         abrController,
         baseURLController,
-        eventController,
-        events,
         manifestUpdater,
-        manifestLoader,
         manifestModel,
-        mediaPlayerModel,
         dashManifestModel,
         metricsModel,
         offlineStreamDownloader,
@@ -67,7 +60,6 @@ function OfflineStream(config) {
         offlineStreamDownloaders,
         streamInfo,
         fragmentController,
-        isUpdating,
         updateError,
         urlUtils,
         isMediaInitialized,
@@ -76,18 +68,9 @@ function OfflineStream(config) {
     function setup() {
         offlineStreamDownloaders = [];
         updateError = {};
-        baseURLController = BaseURLController(context).getInstance();
-        baseURLController.setConfig({
-            dashManifestModel: dashManifestModel
-        });
-
         logger = Debug(context).getInstance().getLogger(instance);
         resetInitialSettings();
         urlUtils = URLUtils(context).getInstance();
-
-        fragmentController = FragmentController(context).create({
-            errHandler: errHandler
-        });
         eventBus.on(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, this);
 
     }
@@ -95,15 +78,10 @@ function OfflineStream(config) {
     function resetInitialSettings() {
         streamInfo = null;
         updateError = {};
-        isUpdating = false;
     }
 
     function setConfig(config) {
         if (!config) return;
-
-        if (config.manifestLoader) {
-            manifestLoader = config.manifestLoader;
-        }
 
         if (config.manifestUpdater) {
             manifestUpdater = config.manifestUpdater;
@@ -141,15 +119,20 @@ function OfflineStream(config) {
 
     function initialize(StreamInfo) {
         streamInfo = StreamInfo;
+        fragmentController = FragmentController(context).create({
+            errHandler: errHandler,
+            metricsModel: metricsModel,
+            requestModifier: RequestModifier(context).getInstance()
+        });
+        baseURLController = BaseURLController(context).getInstance();
+        baseURLController.setConfig({
+            dashManifestModel: dashManifestModel
+        });
         initializeMedia(streamInfo);
     }
 
     function initializeMedia(streamInfo) {
         console.log('initializeMedia', streamInfo);
-        filterCodecs(Constants.VIDEO);
-        filterCodecs(Constants.AUDIO);
-
-        isUpdating = true;
 
         initializeMediaForType(Constants.VIDEO,streamInfo);
         initializeMediaForType(Constants.AUDIO,streamInfo);
@@ -160,7 +143,6 @@ function OfflineStream(config) {
         initializeMediaForType(Constants.IMAGE,streamInfo);
 
         isMediaInitialized = true;
-        isUpdating = false;
 
         if (offlineStreamDownloaders.length === 0) {
             const msg = 'No streams to play.';
@@ -170,9 +152,7 @@ function OfflineStream(config) {
     }
 
     function initializeMediaForType(type, streamInfo) {
-        console.log('initializeMediaForType', type, streamInfo)
         const allMediaForType = adapter.getAllMediaInfoForType(streamInfo, type);
-        console.log(allMediaForType);
 
         let mediaInfo = null;
 
@@ -239,10 +219,7 @@ function OfflineStream(config) {
     }
 
     function onDataUpdateCompleted(e) {
-        console.log('onDataUpdateCompleted', e);
         let sp = e.sender.getStreamProcessor();
-        console.log(sp);
-        console.log((sp.getStreamInfo() !== streamInfo))
         if (sp.getStreamInfo() !== streamInfo) {
             return;
         }
@@ -250,37 +227,6 @@ function OfflineStream(config) {
         updateError[sp.getType()] = e.error;
 
         sp.start();
-    }
-
-    function getProcessorForMediaInfo(mediaInfo) {
-        if (!mediaInfo) {
-            return false;
-        }
-
-        let processors = getProcessors();
-
-        return processors.filter(function (processor) {
-            return (processor.getType() === mediaInfo.type);
-        })[0];
-    }
-
-    function getProcessors() {
-        const ln = offlineStreamDownloaders.length;
-        let arr = [];
-
-        let type,
-            offlineStreamDownloader;
-
-        for (let i = 0; i < ln; i++) {
-            offlineStreamDownloader = offlineStreamDownloaders[i];
-            type = offlineStreamDownloader.getType();
-
-            if (type === Constants.AUDIO || type === Constants.VIDEO || type === Constants.FRAGMENTED_TEXT || type === Constants.TEXT) {
-                arr.push(offlineStreamDownloader);
-            }
-        }
-
-        return arr;
     }
 
     function getStreamInfo() {
@@ -291,35 +237,12 @@ function OfflineStream(config) {
         return streamInfo ? streamInfo.id : NaN;
     }
 
-    function getFragmentController() {
-        return fragmentController;
-    }
-
-
-    function filterCodecs(type) {
-        const realAdaptation = dashManifestModel.getAdaptationForType(manifestModel.getValue(), streamInfo.index, type, streamInfo);
-        console.log(JSON.stringify(realAdaptation));
-        if (!realAdaptation || !Array.isArray(realAdaptation.Representation_asArray)) return null;
-
-        // Filter codecs that are not supported
-        realAdaptation.Representation_asArray = realAdaptation.Representation_asArray.filter((_, i) => {
-            // keep at least codec from lowest representation
-            if (i === 0) return true;
-
-            const codec = dashManifestModel.getCodec(realAdaptation, i, true);
-            return true;
-        });
-    }
-
     instance = {
         initialize: initialize,
         setConfig: setConfig,
         offlineStreamDownloader: offlineStreamDownloader,
-        filterCodecs: filterCodecs,
         getFragmentController: getFragmentController,
         getStreamInfo: getStreamInfo,
-        getId: getId,
-        getProcessors: getProcessors,
         getId: getId
     };
 

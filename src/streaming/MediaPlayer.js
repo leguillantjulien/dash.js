@@ -1906,6 +1906,7 @@ function MediaPlayer() {
 
         const manifestLoader = createManifestLoader();
 
+        metricsModel = MetricsModel(context).getInstance();
         // init some controllers and models
         timelineConverter = TimelineConverter(context).getInstance();
 
@@ -1941,6 +1942,7 @@ function MediaPlayer() {
 
         offlineController.setConfig({
             manifestLoader: manifestLoader,
+            metricsModel: metricsModel,
             manifestModel: manifestModel,
             dashManifestModel: dashManifestModel,
             adapter: adapter,

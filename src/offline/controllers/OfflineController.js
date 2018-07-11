@@ -42,8 +42,6 @@ function OfflineController(config) {
 
     config = config || {};
     const context = this.context;
-    const eventBus = EventBus(context).getInstance();
-    urlUtils = URLUtils(context).getInstance();
 
     let instance,
         adapter,
@@ -52,22 +50,25 @@ function OfflineController(config) {
         manifestLoader,
         manifestModel,
         manifestUpdater,
+        metricsModel,
         dashManifestModel,
         offlineStoreController,
         timelineConverter,
         urlUtils,
         errHandler,
-        streamInfo,
         streams,
         logger;
+
+    urlUtils = URLUtils(context).getInstance();
+    const eventBus = EventBus(context).getInstance();
 
     function setup() {
         streams = [];
         logger = Debug(context).getInstance().getLogger(instance);
-        //eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance); //comment for online play
+        eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance); //comment for online play
         eventBus.on(Events.LOADING_COMPLETED, storeFragment, instance);
         eventBus.on(Events.FRAGMENT_COMPLETED, storeFragment, instance);
-        eventBus.on(Events.STREAM_COMPLETED, createOfflineManifest, instance);
+        //eventBus.on(Events.STREAM_COMPLETED, createOfflineManifest, instance);
         eventBus.on(Events.STREAMS_COMPOSED, streamComposed, instance);
         eventBus.on(Events.INIT_REQUESTED, onInitRequested, instance);
 
@@ -75,13 +76,13 @@ function OfflineController(config) {
     }
 
     function onInitRequested(e) {
-        console.log('onInitRequested', e)
+        console.log('onInitRequested', e);
 
     }
 
 
     function streamComposed(e) {
-        console.log('streamComposed', e)
+        console.log('streamComposed', e);
     }
 
     function setConfig(config) {
@@ -93,6 +94,10 @@ function OfflineController(config) {
 
         if (config.manifestLoader) {
             manifestLoader = config.manifestLoader;
+        }
+
+        if (config.metricsModel) {
+            metricsModel = config.metricsModel;
         }
 
         if (config.manifestModel) {
@@ -175,7 +180,8 @@ function OfflineController(config) {
                         errHandler: errHandler,
                         baseURLController: baseURLController,
                         offlineController: instance,
-                        abrController: abrController
+                        abrController: abrController,
+                        metricsModel: metricsModel
                     });
                     streams.push(stream); //useless
                     stream.initialize(streamInfo);
@@ -188,9 +194,16 @@ function OfflineController(config) {
         }
     }
 
+    function storeFragment(e) {
+        if (e.request !== null) {
+            let fragmentId = urlUtils.removeHostname(e.request.url);
+            offlineStoreController.storeFragment(fragmentId, e.response);
+        }
+    }
+ /*
     function createOfflineManifest(newBaseURL, XMLManifest) {
         logger.info('createOfflineManifest', newBaseURL);
- /*
+
         const Entities = require('html-entities').XmlEntities;
         newBaseURL = 'offline_indexdb://' + urlUtils.removeHostname(newBaseURL)
         logger.info(XMLManifest);
@@ -208,27 +221,18 @@ function OfflineController(config) {
             let encodedManifest = new Entities().encode(new XMLSerializer().serializeToString(DOM));
             storeOfflineManifest(encodedManifest);
         }
-        */
-    }
 
-    function storeFragment(e) {
-        if (e.request !== null) {
-            console.log(e.request.url);
-            let fragmentId = urlUtils.removeHostname(e.request.url);
-            logger.info("fragmentId " + fragmentId);
-            offlineStoreController.storeFragment(fragmentId, e.response);
-        }
     }
 
     function storeOfflineManifest(e) {
         offlineStoreController.storeOfflineManifest(e);
     }
-
+*/
     instance = {
         load: load,
         onManifestUpdated: onManifestUpdated,
         setConfig: setConfig,
-        createOfflineManifest: createOfflineManifest,
+        //createOfflineManifest: createOfflineManifest,
         composeStreams: composeStreams,
         getComposedStream:getComposedStream
     };
