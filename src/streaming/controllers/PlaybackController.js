@@ -69,7 +69,6 @@ function PlaybackController() {
         playOnceInitialized,
         lastLivePlaybackTime,
         originalPlaybackRate,
-        catchingUp,
         availabilityStartTime,
         compatibleWithPreviousStream;
 
@@ -139,11 +138,21 @@ function PlaybackController() {
         return streamInfo && videoModel ? videoModel.isSeeking() : null;
     }
 
-    function seek(time, stickToBuffered) {
+    function seek(time, stickToBuffered, internalSeek) {
         if (streamInfo && videoModel) {
-            eventBus.trigger(Events.PLAYBACK_SEEK_ASKED);
-            logger.info('Requesting seek to time: ' + time);
-            videoModel.setCurrentTime(time, stickToBuffered);
+            if (internalSeek === true) {
+                if (time !== videoModel.getTime()) {
+                    // Internal seek = seek video model only (disable 'seeking' listener),
+                    // buffer(s) are already appended at given time (see onBytesAppended())
+                    videoModel.removeEventListener('seeking', onPlaybackSeeking);
+                    logger.info('Requesting seek to time: ' + time);
+                    videoModel.setCurrentTime(time, stickToBuffered);
+                }
+            } else {
+                eventBus.trigger(Events.PLAYBACK_SEEK_ASKED);
+                logger.info('Requesting seek to time: ' + time);
+                videoModel.setCurrentTime(time, stickToBuffered);
+            }
         }
     }
 
@@ -256,8 +265,6 @@ function PlaybackController() {
             const playbackRate = 1 + getCatchUpPlaybackRate();
             const currentRate = getPlaybackRate();
             if (playbackRate !== currentRate) {
-                catchingUp = true;
-
                 logger.info('Starting live catchup mechanism. Setting playback rate to', playbackRate);
                 originalPlaybackRate = currentRate;
                 videoModel.getElement().playbackRate = playbackRate;
@@ -271,8 +278,6 @@ function PlaybackController() {
         if (videoModel) {
             const playbackRate = originalPlaybackRate || 1;
             if (playbackRate !== getPlaybackRate()) {
-                catchingUp = false;
-
                 logger.info('Stopping live catchup mechanism. Setting playback rate to', playbackRate);
                 videoModel.getElement().playbackRate = playbackRate;
 
@@ -500,6 +505,8 @@ function PlaybackController() {
     function onPlaybackSeeked() {
         logger.info('Native video element event: seeked');
         eventBus.trigger(Events.PLAYBACK_SEEKED);
+        // Reactivate 'seeking' event listener (see seek())
+        videoModel.addEventListener('seeking', onPlaybackSeeking);
     }
 
     function onPlaybackTimeUpdated() {
@@ -589,7 +596,7 @@ function PlaybackController() {
 
     function onPlaybackProgression() {
         if (isDynamic && mediaPlayerModel.getLowLatencyEnabled() && getCatchUpPlaybackRate() > 0.0) {
-            if (!catchingUp && needToCatchUp()) {
+            if (!isCatchingUp() && needToCatchUp()) {
                 startPlaybackCatchUp();
             } else if (stopCatchingUp()) {
                 stopPlaybackCatchUp();
@@ -603,6 +610,10 @@ function PlaybackController() {
 
     function stopCatchingUp() {
         return getCurrentLiveLatency() <= (mediaPlayerModel.getLiveDelay() );
+    }
+
+    function isCatchingUp() {
+        return getCatchUpPlaybackRate() + 1 === getPlaybackRate();
     }
 
     function onBytesAppended(e) {
@@ -653,7 +664,7 @@ function PlaybackController() {
                 }
                 if (checkTimeInRanges(earliestTime, ranges)) {
                     if (!isSeeking() && !compatibleWithPreviousStream) {
-                        seek(earliestTime, true);
+                        seek(earliestTime, true, true);
                     }
                     commonEarliestTime[streamInfo.id].started = true;
                 }
@@ -663,7 +674,7 @@ function PlaybackController() {
             if (commonEarliestTime[streamInfo.id][type]) {
                 earliestTime = commonEarliestTime[streamInfo.id][type] > initialStartTime ? commonEarliestTime[streamInfo.id][type] : initialStartTime;
                 if (!isSeeking() && !compatibleWithPreviousStream) {
-                    seek(earliestTime);
+                    seek(earliestTime, false, true);
                 }
                 commonEarliestTime[streamInfo.id].started = true;
             }
@@ -677,7 +688,6 @@ function PlaybackController() {
     }
 
     function onPlaybackStalled(e) {
-        logger.info('Native video element event: stalled', e);
         eventBus.trigger(Events.PLAYBACK_STALLED, {
             e: e
         });
