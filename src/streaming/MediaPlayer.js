@@ -1948,7 +1948,7 @@ function MediaPlayer() {
             adapter: adapter,
             errHandler: errHandler,
             timelineConverter: timelineConverter,
-            abrController: abrController,
+            abrController: abrController
         });
     }
 
