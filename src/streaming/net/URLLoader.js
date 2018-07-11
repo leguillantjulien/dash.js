@@ -48,7 +48,7 @@ function URLLoader(cfg) {
     function load(config) {
         if (urlUtils.isOfflineURL(config.request.url)) {
             indexDBOfflineLoader.load(config);
-        } else{
+        } else {
             httpLoader.load(config);
         }
     }
@@ -58,7 +58,7 @@ function URLLoader(cfg) {
     }
     instance = {
         load: load,
-        abort:abort
+        abort: abort
     };
 
     return instance;

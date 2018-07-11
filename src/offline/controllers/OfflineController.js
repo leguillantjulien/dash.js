@@ -200,7 +200,7 @@ function OfflineController(config) {
             offlineStoreController.storeFragment(fragmentId, e.response);
         }
     }
- /*
+    /*
     function createOfflineManifest(newBaseURL, XMLManifest) {
         logger.info('createOfflineManifest', newBaseURL);
 
@@ -227,14 +227,14 @@ function OfflineController(config) {
     function storeOfflineManifest(e) {
         offlineStoreController.storeOfflineManifest(e);
     }
-*/
+    */
     instance = {
         load: load,
         onManifestUpdated: onManifestUpdated,
         setConfig: setConfig,
         //createOfflineManifest: createOfflineManifest,
         composeStreams: composeStreams,
-        getComposedStream:getComposedStream
+        getComposedStream: getComposedStream
     };
 
     setup();

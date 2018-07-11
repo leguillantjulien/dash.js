@@ -28,7 +28,6 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-import EventBus from './../../core/EventBus';
 import FactoryMaker from './../../core/FactoryMaker';
 import Debug from './../../core/Debug';
 import IndexDBStore from './../storage/IndexDBStore';

@@ -31,7 +31,6 @@
 import Constants from './constants/Constants';
 import XlinkController from './controllers/XlinkController';
 import URLLoader from './net/URLLoader';
-import OfflineController from '../offline/controllers/OfflineController';
 import IndexDBOfflineLoader from '../offline/net/IndexDBOfflineLoader';
 import HTTPLoader from './net/HTTPLoader';
 import URLUtils from './utils/URLUtils';
@@ -59,7 +58,6 @@ function ManifestLoader(config) {
         logger,
         urlLoader,
         xlinkController,
-        offlineController,
         parser;
     let mssHandler = config.mssHandler;
     let errHandler = config.errHandler;
@@ -117,115 +115,112 @@ function ManifestLoader(config) {
 
         const request = new TextRequest(url, HTTPRequest.MPD_TYPE);
 
-            urlLoader.load({
-                request: request,
-                success: function (data, textStatus, responseURL) {
-                    // Manage situations in which success is called after calling reset
-                    if (!xlinkController) return;
+        urlLoader.load({
+            request: request,
+            success: function (data, textStatus, responseURL) {
+                // Manage situations in which success is called after calling reset
+                if (!xlinkController) return;
 
-                    let actualUrl,
-                        baseUri,
-                        manifest;
+                let actualUrl,
+                    baseUri,
+                    manifest;
 
-                    // Handle redirects for the MPD - as per RFC3986 Section 5.1.3
-                    // also handily resolves relative MPD URLs to absolute
-                    if (responseURL && responseURL !== url) {
-                        baseUri = urlUtils.parseBaseUrl(responseURL);
-                        actualUrl = responseURL;
-                    } else {
-                        // usually this case will be caught and resolved by
-                        // responseURL above but it is not available for IE11 and Edge/12 and Edge/13
-                        // baseUri must be absolute for BaseURL resolution later
-                        if (urlUtils.isRelative(url) && !urlUtils.isOfflineURL(url)) {
-                            url = urlUtils.resolve(url, window.location.href);
-                        }
-
-                        baseUri = urlUtils.parseBaseUrl(url);
+                // Handle redirects for the MPD - as per RFC3986 Section 5.1.3
+                // also handily resolves relative MPD URLs to absolute
+                if (responseURL && responseURL !== url) {
+                    baseUri = urlUtils.parseBaseUrl(responseURL);
+                    actualUrl = responseURL;
+                } else {
+                    // usually this case will be caught and resolved by
+                    // responseURL above but it is not available for IE11 and Edge/12 and Edge/13
+                    // baseUri must be absolute for BaseURL resolution later
+                    if (urlUtils.isRelative(url) && !urlUtils.isOfflineURL(url)) {
+                        url = urlUtils.resolve(url, window.location.href);
                     }
 
-                    // Create parser according to manifest type
-                    if (parser === null) {
-                        parser = createParser(data);
-                    }
+                    baseUri = urlUtils.parseBaseUrl(url);
+                }
 
-                    if (parser === null) {
-                        eventBus.trigger(
-                            Events.INTERNAL_MANIFEST_LOADED, {
-                                manifest: null,
-                                error: new DashJSError(
-                                    MANIFEST_LOADER_ERROR_PARSING_FAILURE,
-                                    `Failed detecting manifest type or manifest type unsupported : ${url}`
-                                )
-                            }
-                        );
-                        return;
-                    }
+                // Create parser according to manifest type
+                if (parser === null) {
+                    parser = createParser(data);
+                }
 
-                    // init xlinkcontroller with matchers and iron object from created parser
-                    xlinkController.setMatchers(parser.getMatchers());
-                    xlinkController.setIron(parser.getIron());
-
-                    try {
-                        manifest = parser.parse(data);
-                    } catch (e) {
-                        eventBus.trigger(
-                            Events.INTERNAL_MANIFEST_LOADED, {
-                                manifest: null,
-                                error: new DashJSError(
-                                    MANIFEST_LOADER_ERROR_PARSING_FAILURE,
-                                    `Failed parsing manifest : ${url}`
-                                )
-                            }
-                        );
-                        return;
-                    }
-
-                    if (manifest) {
-                        manifest.url = actualUrl || url;
-
-                        // URL from which the MPD was originally retrieved (MPD updates will not change this value)
-                        if (!manifest.originalUrl) {
-                            manifest.originalUrl = manifest.url;
-                        }
-
-                        // In the following, we only use the first Location entry even if many are available
-                        // Compare with ManifestUpdater/DashManifestModel
-                        if (manifest.hasOwnProperty(Constants.LOCATION)) {
-                            baseUri = urlUtils.parseBaseUrl(manifest.Location_asArray[0]);
-                            logger.debug('BaseURI set by Location to: ' + baseUri);
-                        }
-
-                        manifest.baseUri = baseUri;
-                        manifest.loadedTime = new Date();
-                        xlinkController.resolveManifestOnLoad(manifest);
-
-                        // if (!urlUtils.isOfflineURL(manifest.baseUri)) {
-                        //     offlineController.createOfflineManifest(baseUri,data);
-                        // }
-                    } else {
-                        eventBus.trigger(
-                            Events.INTERNAL_MANIFEST_LOADED, {
-                                manifest: null,
-                                error: new DashJSError(
-                                    MANIFEST_LOADER_ERROR_PARSING_FAILURE,
-                                    MANIFEST_LOADER_MESSAGE_PARSING_FAILURE
-                                )
-                            }
-                        );
-                    }
-                },
-                error: function (request, statusText, errorText) {
+                if (parser === null) {
                     eventBus.trigger(
                         Events.INTERNAL_MANIFEST_LOADED, {
                             manifest: null,
                             error: new DashJSError(
-                                MANIFEST_LOADER_ERROR_LOADING_FAILURE,
-                                `Failed loading manifest: ${url}, ${errorText}`
+                                MANIFEST_LOADER_ERROR_PARSING_FAILURE,
+                                `Failed detecting manifest type or manifest type unsupported : ${url}`
+                            )
+                        }
+                    );
+                    return;
+                }
+
+                // init xlinkcontroller with matchers and iron object from created parser
+                xlinkController.setMatchers(parser.getMatchers());
+                xlinkController.setIron(parser.getIron());
+
+                try {
+                    manifest = parser.parse(data);
+                } catch (e) {
+                    eventBus.trigger(
+                        Events.INTERNAL_MANIFEST_LOADED, {
+                            manifest: null,
+                            error: new DashJSError(
+                                MANIFEST_LOADER_ERROR_PARSING_FAILURE,
+                                `Failed parsing manifest : ${url}`
+                            )
+                        }
+                    );
+                    return;
+                }
+
+                if (manifest) {
+                    manifest.url = actualUrl || url;
+
+                    // URL from which the MPD was originally retrieved (MPD updates will not change this value)
+                    if (!manifest.originalUrl) {
+                        manifest.originalUrl = manifest.url;
+                    }
+
+                    // In the following, we only use the first Location entry even if many are available
+                    // Compare with ManifestUpdater/DashManifestModel
+                    if (manifest.hasOwnProperty(Constants.LOCATION)) {
+                        baseUri = urlUtils.parseBaseUrl(manifest.Location_asArray[0]);
+                        logger.debug('BaseURI set by Location to: ' + baseUri);
+                    }
+
+                    manifest.baseUri = baseUri;
+                    manifest.loadedTime = new Date();
+                    xlinkController.resolveManifestOnLoad(manifest);
+
+                } else {
+                    eventBus.trigger(
+                        Events.INTERNAL_MANIFEST_LOADED, {
+                            manifest: null,
+                            error: new DashJSError(
+                                MANIFEST_LOADER_ERROR_PARSING_FAILURE,
+                                MANIFEST_LOADER_MESSAGE_PARSING_FAILURE
                             )
                         }
                     );
                 }
-            });
+            },
+            error: function (request, statusText, errorText) {
+                eventBus.trigger(
+                    Events.INTERNAL_MANIFEST_LOADED, {
+                        manifest: null,
+                        error: new DashJSError(
+                            MANIFEST_LOADER_ERROR_LOADING_FAILURE,
+                            `Failed loading manifest: ${url}, ${errorText}`
+                        )
+                    }
+                );
+            }
+        });
     }
 
     function reset() {

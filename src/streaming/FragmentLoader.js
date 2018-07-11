@@ -50,22 +50,14 @@ function FragmentLoader(config) {
         urlLoader;
 
     function setup() {
-        let httpLoader;
-        if (config.mediaPlayerModel) {
-            //online
-            httpLoader = HTTPLoader(context).create({
+        urlLoader = URLLoader(context).create({
+            httpLoader: HTTPLoader(context).create({
                 errHandler: config.errHandler,
                 metricsModel: config.metricsModel,
                 mediaPlayerModel: config.mediaPlayerModel,
                 requestModifier: config.requestModifier,
-                useFetch: config.mediaPlayerModel.getLowLatencyEnabled()
+                useFetch: config.mediaPlayerModel ? config.mediaPlayerModel.getLowLatencyEnabled() : null
             })
-        } else {
-            //offline
-            httpLoader = null;
-        }
-        urlLoader = URLLoader(context).create({
-            httpLoader: httpLoader
         });
     }
 
@@ -81,7 +73,6 @@ function FragmentLoader(config) {
 
         if (request) {
             let headRequest = new HeadRequest(request.url);
-            console.log('FragmentLoader')
             urlLoader.load({
                 request: headRequest,
                 success: function () {
@@ -97,7 +88,6 @@ function FragmentLoader(config) {
     }
 
     function load(request) {
-        console.log('load REQUEST');
         const report = function (data, error) {
             eventBus.trigger(Events.LOADING_COMPLETED, {
                 request: request,

@@ -204,7 +204,7 @@ function URLUtils() {
 
     /**
      * Determines whether the url is relative.
-     * @return {bool}
+     * @return {boolean}
      * @param {string} url
      * @memberof module:URLUtils
      * @instance
@@ -213,7 +213,7 @@ function URLUtils() {
         if (offlineUrlRegex.test(url)) {
             return false;
         }
-            return !schemeRegex.test(url);
+        return !schemeRegex.test(url);
     }
 
     /**
@@ -261,7 +261,7 @@ function URLUtils() {
         return httpsUrlRegex.test(url);
     }
 
-      /**
+    /**
      * Determines whether the supplied url is an offline adress
      * @return {bool}
      * @param {string} url
