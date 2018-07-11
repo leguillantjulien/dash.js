@@ -72,6 +72,141 @@ function HTTPLoader(cfg) {
         };
     }
 
+
+    function offlineLoad(config) {
+        let request = config.request;
+        let firstProgress = true;
+        let needFailureReport = true;
+        let requestStartTime = new Date();
+        let lastTraceTime = requestStartTime;
+        let httpRequest;
+
+        if (!requestModifier || !metricsModel || !errHandler) {
+            throw new Error('config object is not correct or missing');
+        }
+
+        const handleLoaded = function () {
+            console.log('handleLoaded');
+            needFailureReport = false;
+
+            request.requestStartDate = requestStartTime;
+            request.requestEndDate = new Date();
+            request.firstByteDate = request.firstByteDate || requestStartTime;
+        };
+
+        const onloadend = function () {
+            console.log('onloadend');
+
+            if (needFailureReport) {
+                handleLoaded(false);
+
+                if (config.error) {
+                    config.error(request, 'error', httpRequest.response.statusText);
+                }
+
+                if (config.complete) {
+                    config.complete(request, httpRequest.response.statusText);
+                }
+            }
+        };
+
+        const progress = function (event) {
+            const currentTime = new Date();
+
+            if (firstProgress) {
+                firstProgress = false;
+                if (!event.lengthComputable ||
+                    (event.lengthComputable && event.total !== event.loaded)) {
+                    request.firstByteDate = currentTime;
+                }
+            }
+
+            if (event.lengthComputable) {
+                request.bytesLoaded = event.loaded;
+                request.bytesTotal = event.total;
+            }
+
+            if (config.progress && event) {
+                config.progress(event);
+            }
+        };
+
+        const onload = function () {
+            if (httpRequest.response.status >= 200 && httpRequest.response.status <= 299) {
+                handleLoaded(true);
+
+                if (config.success) {
+                    config.success(httpRequest.response.response, httpRequest.response.statusText, httpRequest.response.responseURL);
+                }
+
+                if (config.complete) {
+                    config.complete(request, httpRequest.response.statusText);
+                }
+            }
+        };
+
+        const onabort = function () {
+            if (config.abort) {
+                config.abort(request);
+            }
+        };
+
+        let loader;
+        if (useFetch && window.fetch && request.responseType === 'arraybuffer') {
+            loader = FetchLoader(context).create({
+                requestModifier: requestModifier
+            });
+        } else {
+            loader = XHRLoader(context).create({
+                requestModifier: requestModifier
+            });
+        }
+
+        const modifiedUrl = requestModifier.modifyRequestURL(request.url);
+        const verb = request.checkExistenceOnly ? HTTPRequest.HEAD : HTTPRequest.GET;
+        const withCredentials = mediaPlayerModel ? mediaPlayerModel.getXHRWithCredentialsForType(request.type) : null;
+
+        httpRequest = {
+            url: modifiedUrl,
+            method: verb,
+            withCredentials: withCredentials,
+            request: request,
+            onload: onload,
+            onend: onloadend,
+            onerror: onloadend,
+            progress: progress,
+            onabort: onabort,
+            loader: loader
+        };
+
+        // Adds the ability to delay single fragment loading time to control buffer.
+        let now = new Date().getTime();
+        if (isNaN(request.delayLoadingTime) || now >= request.delayLoadingTime) {
+            // no delay - just send
+            requests.push(httpRequest);
+            loader.load(httpRequest);
+        } else {
+            // delay
+            let delayedRequest = { httpRequest: httpRequest };
+            delayedRequests.push(delayedRequest);
+            delayedRequest.delayTimeout = setTimeout(function () {
+                if (delayedRequests.indexOf(delayedRequest) === -1) {
+                    return;
+                } else {
+                    delayedRequests.splice(delayedRequests.indexOf(delayedRequest), 1);
+                }
+                try {
+                    requestStartTime = new Date();
+                    lastTraceTime = requestStartTime;
+                    requests.push(delayedRequest.httpRequest);
+                    loader.load(delayedRequest.httpRequest);
+                } catch (e) {
+                    delayedRequest.httpRequest.onerror();
+                }
+            }, (request.delayLoadingTime - now));
+        }
+    }
+    /*
     function internalLoad(config, remainingAttempts) {
         const request = config.request;
         const traces = [];
@@ -254,7 +389,9 @@ function HTTPLoader(cfg) {
                 }
             }, (request.delayLoadingTime - now));
         }
+
     }
+    */
 
     /**
      * Initiates a download of the resource described by config.request
@@ -264,12 +401,16 @@ function HTTPLoader(cfg) {
      */
     function load(config) {
         if (config.request) {
-            internalLoad(
-                config,
-                mediaPlayerModel.getRetryAttemptsForType(
-                    config.request.type
-                )
+            offlineLoad(
+                config
             );
+
+            // internalLoad(
+            //     config,
+            //     mediaPlayerModel.getRetryAttemptsForType(
+            //         config.request.type
+            //     )
+            // );
         }
     }
 
