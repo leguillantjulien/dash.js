@@ -693,7 +693,7 @@ function AbrController() {
 
     function onFragmentLoadProgress(e) {
         const type = e.request.mediaType;
-        if (getAutoSwitchBitrateFor(type)) {
+        if (abrRulesCollection && getAutoSwitchBitrateFor(type)) {
             const streamProcessor = streamProcessorDict[type];
             if (!streamProcessor) return;// There may be a fragment load in progress when we switch periods and recreated some controllers.
 
