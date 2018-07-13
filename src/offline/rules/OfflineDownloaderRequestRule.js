@@ -46,8 +46,7 @@ function OfflineDownloaderRequestRule() {
 
 
     function execute(streamProcessor) {
-        const representationInfo = streamProcessor.getCurrentRepresentationInfo();
-        const mediaInfo = representationInfo.mediaInfo;
+        const mediaInfo = streamProcessor.getCurrentRepresentationInfo().mediaInfo;
         const mediaType = mediaInfo.type;
         const indexHandler = streamProcessor.getIndexHandler();
         let time = indexHandler.getCurrentTime();
@@ -56,12 +55,12 @@ function OfflineDownloaderRequestRule() {
         if (isNaN(time) || (mediaType === Constants.FRAGMENTED_TEXT)) {
             return null;
         }
-        let representation = streamProcessor.getRepresentationForQuality(representationInfo.quality);
+        let representation = streamProcessor.getRepresentation();
         request = indexHandler.getSegmentRequestForTime(representation, time);
         // Then, check if this request was downloaded or not
         while (request && request.action !== FragmentRequest.ACTION_COMPLETE  && streamProcessor.getFragmentModel().isFragmentLoaded(request)) {
             // loop until we found not loaded fragment, or no fragment
-            representation = streamProcessor.getRepresentationForQuality(representationInfo.quality);
+            representation = streamProcessor.getRepresentation();
             request = indexHandler ? indexHandler.getNextSegmentRequest(representation) : null;
         }
         if (request) {

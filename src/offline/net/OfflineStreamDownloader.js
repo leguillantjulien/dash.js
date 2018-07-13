@@ -56,7 +56,6 @@ function OfflineStreamDownloader(config) {
         mediaInfo,
         abrController,
         updating,
-        voAvailableRepresentations,
         realAdaptation,
         currentVoRepresentation,
         offlineDownloaderRequestRule,
@@ -125,7 +124,6 @@ function OfflineStreamDownloader(config) {
     }
 
     function setup() {
-        voAvailableRepresentations = [];
         isInitialized = false;
         maxQuality = null;
         downloadedSegments = 0;
@@ -245,7 +243,6 @@ function OfflineStreamDownloader(config) {
         } else {
             throw new Error('Any Vo Periods for this streamInfo');
         }
-
     }
 
     function getInitRequest() {
@@ -312,8 +309,9 @@ function OfflineStreamDownloader(config) {
         updating = true;
         eventBus.trigger(Events.DATA_UPDATE_STARTED, {sender: this});
 
-        voAvailableRepresentations = updateRepresentations(voAdaptation);
-        currentVoRepresentation = getRepresentationForQuality(maxQuality);
+        currentVoRepresentation = updateRepresentations(voAdaptation);
+        console.log('currentVoRepresentation ', currentVoRepresentation);
+
         realAdaptation = newRealAdaptation;
         if (type !== Constants.VIDEO && type !== Constants.AUDIO && type !== Constants.FRAGMENTED_TEXT) {
             updating = false;
@@ -332,11 +330,12 @@ function OfflineStreamDownloader(config) {
     }
 
     function updateRepresentations(voAdaptation) {
-        return dashManifestModel.getRepresentationsForAdaptation(voAdaptation);
+        currentVoRepresentation = dashManifestModel.getRepresentationsForAdaptation(voAdaptation)[maxQuality];
+        return currentVoRepresentation;
     }
 
-    function getRepresentationForQuality(quality) {
-        return voAvailableRepresentations[quality];
+    function getRepresentation() {
+        return currentVoRepresentation;
     }
 
     function getCurrentRepresentationInfo() {
@@ -372,7 +371,7 @@ function OfflineStreamDownloader(config) {
         getMediaInfo: getMediaInfo,
         getType: getType,
         isUpdating: isUpdating,
-        getRepresentationForQuality: getRepresentationForQuality,
+        getRepresentation: getRepresentation,
         getPeriodForStreamInfo: getPeriodForStreamInfo,
         getStreamProcessor: getStreamProcessor,
         start: start,
