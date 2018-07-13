@@ -532,6 +532,7 @@ function DashHandler(config) {
         setCurrentTime: setCurrentTime,
         getCurrentTime: getCurrentTime,
         getEarliestTime: getEarliestTime,
+        isMediaFinished: isMediaFinished,
         reset: reset
     };
 

@@ -34,11 +34,7 @@ import Events from './../../core/events/Events';
 import FactoryMaker from './../../core/FactoryMaker';
 import DashHandler from './../../dash/DashHandler';
 import Constants from './../../streaming/constants/Constants';
-import Representation from './../../dash/vo/Representation';
-import DashConstants from '../../dash/constants/DashConstants';
 import OfflineDownloaderRequestRule from './../rules/OfflineDownloaderRequestRule';
-import FragmentModel from './../../streaming/models/FragmentModel';
-import RequestModifier from './../../streaming/utils/RequestModifier';
 
 function OfflineStreamDownloader(config) {
 
@@ -53,28 +49,25 @@ function OfflineStreamDownloader(config) {
         errHandler,
         eventBus,
         mimeType,
-        manifestModel,
         baseURLController,
         fragmentModel,
         dashManifestModel,
         timelineConverter,
         mediaInfo,
-        mediaInfoArr,
         abrController,
         updating,
         voAvailableRepresentations,
-        realAdaptationIndex,
         realAdaptation,
         currentVoRepresentation,
         offlineDownloaderRequestRule,
         metricsModel,
-        voRepresentation,
-        requestModifier,
-        replaceRequestArray,
         downloaderTimeout,
         isInitialized,
         maxQuality,
         representation,
+        isStopped,
+        currentSegmentsNumbers,
+        downloadedSegments,
         stream;
 
     function setConfig(config) {
@@ -109,10 +102,6 @@ function OfflineStreamDownloader(config) {
             adapter = config.adapter;
         }
 
-        if (config.manifestModel) {
-            manifestModel = config.manifestModel;
-        }
-
         if (config.baseURLController) {
             baseURLController = config.baseURLController;
         }
@@ -136,14 +125,13 @@ function OfflineStreamDownloader(config) {
     }
 
     function setup() {
-        mediaInfoArr = [];
         voAvailableRepresentations = [];
-        replaceRequestArray = [];
         isInitialized = false;
         maxQuality = null;
+        downloadedSegments = 0;
         logger = Debug(context).getInstance().getLogger(instance);
         eventBus = EventBus(context).getInstance();
-        eventBus.on(Events.STREAM_COMPLETED, createOfflineManifest, instance);
+        eventBus.on(Events.STREAM_COMPLETED, onStreamCompleted, instance);
         eventBus.on(Events.REPRESENTATION_UPDATED, onRepresentationUpdated, instance);
         eventBus.on(Events.FRAGMENT_LOADING_COMPLETED, onFragmentLoadingCompleted, instance);
 
@@ -154,12 +142,9 @@ function OfflineStreamDownloader(config) {
         if (e.sender !== fragmentModel) {
             return;
         }
-        logger.info('OnFragmentLoadingCompleted - Url:', e.request ? e.request.url : 'undefined');
 
-        if (e.error && e.request.serviceLocation) { //TODO add !isStopped
-            logger.info(e.request);
-            replaceRequest(e.request);
-            startDownloaderTimer(500);
+        if (e.error && e.request.serviceLocation && !isStopped) {
+            fragmentModel.executeRequest(e.request);
         }
 
         eventBus.trigger(Events.FRAGMENT_COMPLETED, { //use for offlineController EVENT
@@ -172,9 +157,23 @@ function OfflineStreamDownloader(config) {
         return instance;
     }
 
-    function createOfflineManifest(e) {
-        logger.info('createOfflineManifest');
-        logger.info(JSON.stringify(e));
+    function onStreamCompleted(e) {
+        logger.warn('onStreamCompleted : ',e);
+        if (e.fragmentModel !== fragmentModel) {
+            return;
+        }
+
+        stop();
+        logger.info('Stream is complete');
+    }
+
+    function stop() {
+        logger.info('stop');
+        if (isStopped) {
+            return;
+        }
+        isStopped = true;
+        clearTimeout(downloaderTimeout);
     }
 
     function initialize() {
@@ -192,11 +191,8 @@ function OfflineStreamDownloader(config) {
         fragmentModel = getFragmentController().getModel(type);
         fragmentModel.setStreamProcessor(instance);
 
-        offlineDownloaderRequestRule = OfflineDownloaderRequestRule(context).create({
-            adapter: adapter
-        });
+        offlineDownloaderRequestRule = OfflineDownloaderRequestRule(context).create();
 
-        requestModifier = RequestModifier(context).getInstance();
     }
 
     function getIndexHandler() {
@@ -212,17 +208,10 @@ function OfflineStreamDownloader(config) {
     }
 
     function addMediaInfo(newMediaInfo, selectNewMediaInfo) {
-        if (mediaInfoArr.indexOf(newMediaInfo) === -1) {
-            mediaInfoArr.push(newMediaInfo);
-        }
 
         if (selectNewMediaInfo) {
-            this.selectMediaInfo(newMediaInfo);
+            selectMediaInfo(newMediaInfo);
         }
-    }
-
-    function getMediaInfoArr() {
-        return mediaInfoArr;
     }
 
     function selectMediaInfo(newMediaInfo) {
@@ -253,82 +242,67 @@ function OfflineStreamDownloader(config) {
             abrController.updateTopQualityIndex(mediaInfo);
             realAdaptation = id ? dashManifestModel.getAdaptationForId(id, adapter.getVoPeriods()[0].mpd.manifest, selectedVoPeriod.index) : dashManifestModel.getAdaptationForIndex(mediaInfo.index, adapter.getVoPeriods()[0].mpd.manifest, selectedVoPeriod.index);
             updateRepresentation(realAdaptation, voAdaptation, type);
+        } else {
+            throw new Error('Any Vo Periods for this streamInfo');
         }
 
     }
 
     function getInitRequest() {
         let initRequest = indexHandler.getInitRequest(representation);
-        console.log('initRequest', initRequest);
         return Promise.resolve(fragmentModel.executeRequest(initRequest));
     }
 
-    function validateExecutedFragmentRequest() {
-        // Validate that the fragment request executed and appended into the source buffer is as
-        // good of quality as the current quality and is the correct media track.
-        const request = fragmentModel.getRequests({
-            state: FragmentModel.FRAGMENT_MODEL_EXECUTED,
-            threshold: 0
-        })[0];
-        console.log('validateExecutedFragmentRequest');
-        if (request && replaceRequestArray.indexOf(request) === -1 && !dashManifestModel.getIsTextTrack(type)) {
-            replaceRequest(request);
-        }
-    }
-
-    function replaceRequest(request) {
-        replaceRequestArray.push(request);
-    }
 
     function timeIsBuffered(time) {
         if (time !== undefined) {
-
             return true;
         }
     }
-
     function start() {
-        startDownloaderTimer(1500);
-
-        validateExecutedFragmentRequest();
-        const isReplacement = replaceRequestArray.length > 0;
-
-        if (isReplacement || isNaN(currentVoRepresentation.quality)) {
-            const getNextFragment = function () {
-                logger.info('isInitialized', isInitialized);
-                if (!isInitialized) {
-                    getInitRequest().then(function () {
-                        isInitialized = true;
-                    }).catch(function () {
-                        throw new Error('Cannot initialize first request');
-                    });
-                } else {
-                    const replacement = replaceRequestArray.shift();
-                    logger.info('replacement', replacement);
-
-                    let request = offlineDownloaderRequestRule.execute(instance, replacement);
-
-                    if (request) {
-                        logger.info('getNextFragment - request is ' + request.url);
-                        fragmentModel.executeRequest(request);
-                    } else {
-                        startDownloaderTimer(1000);
-                    }
-                }
-            };
-            getNextFragment();
-        } else {
-            startDownloaderTimer(1000);
+        if (!currentVoRepresentation) {
+            throw new Error('Start denied to downloadManager');
         }
+        currentSegmentsNumbers = currentVoRepresentation.availableSegmentsNumber;
+        isStopped = false;
+        logger.info('currentSegmentsNumbers : ', currentSegmentsNumbers);
+
+        startDownloadTimer(0);
     }
 
-    function startDownloaderTimer(value) {
+    function downloader() {
+        if (isStopped) {
+            return;
+        }
+
+        if (isNaN(currentVoRepresentation.quality)) {
+            if (!isInitialized) {
+                getInitRequest().then(function () {
+                    isInitialized = true;
+                }).catch(function () {
+                    throw new Error('Cannot initialize first request');
+                });
+            } else {
+                let request = offlineDownloaderRequestRule.execute(instance);
+
+                if (request) {
+                    logger.info('getNextFragment - request is ' + request.url);
+                    fragmentModel.executeRequest(request);
+                }
+            }
+        }
+
+        if (indexHandler.isMediaFinished(currentVoRepresentation) ) {
+            stop();
+        } else {
+            startDownloadTimer(200);
+        }
+
+    }
+
+    function startDownloadTimer(value) {
         clearTimeout(downloaderTimeout);
-        downloaderTimeout = setTimeout(start, value);
-    }
-
-    function getRepresentationForRepresentationInfo(representationInfo) {
-        return getRepresentationForQuality(representationInfo.quality);
+        downloaderTimeout = setTimeout(downloader, value);
     }
 
     function updateRepresentation(newRealAdaptation, voAdaptation, type) {
@@ -354,37 +328,11 @@ function OfflineStreamDownloader(config) {
         if (e.sender.getStreamProcessor() !== instance || !isUpdating()) return;
 
         representation = e.representation;
-
-        if (isAllRepresentationsUpdated()) {
-            updating = false;
-        }
         eventBus.trigger(Events.DATA_UPDATE_COMPLETED, {sender: this, data: realAdaptation, currentRepresentation: currentVoRepresentation});
     }
 
-    function isAllRepresentationsUpdated() {
-        for (let i = 0, ln = voAvailableRepresentations.length; i < ln; i++) {
-            let segmentInfoType = voAvailableRepresentations[i].segmentInfoType;
-            if (voAvailableRepresentations[i].segmentAvailabilityRange === null || !Representation.hasInitialization(voAvailableRepresentations[i]) ||
-                ((segmentInfoType === DashConstants.SEGMENT_BASE || segmentInfoType === DashConstants.BASE_URL) && !voAvailableRepresentations[i].segments)
-            ) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    function getQualityForRepresentation(voRepresentation) {
-        return voAvailableRepresentations.indexOf(voRepresentation);
-    }
-
     function updateRepresentations(voAdaptation) {
-        let voReps;
-
-        realAdaptationIndex = dashManifestModel.getIndexForAdaptation(realAdaptation, voAdaptation.period.mpd.manifest, voAdaptation.period.index);
-        voReps = dashManifestModel.getRepresentationsForAdaptation(voAdaptation);
-
-        return voReps;
+        return dashManifestModel.getRepresentationsForAdaptation(voAdaptation);
     }
 
     function getRepresentationForQuality(quality) {
@@ -395,17 +343,11 @@ function OfflineStreamDownloader(config) {
         return currentVoRepresentation ? adapter.convertDataToRepresentationInfo(currentVoRepresentation) : null;
     }
 
-    function getRepresentationInfoForQuality(quality) {
-        voRepresentation = getRepresentationForQuality(quality);
-        return voRepresentation ? adapter.convertDataToRepresentationInfo(voRepresentation) : null;
-    }
-
     function getStreamInfo() {
         return stream ? stream.getStreamInfo() : null;
     }
 
     function isUpdating() {
-        console.log('updating', updating);
         return updating;
     }
 
@@ -423,20 +365,16 @@ function OfflineStreamDownloader(config) {
         getIndexHandler: getIndexHandler,
         addMediaInfo: addMediaInfo,
         getCurrentRepresentationInfo: getCurrentRepresentationInfo,
-        getRepresentationInfoForQuality: getRepresentationInfoForQuality,
         selectMediaInfo: selectMediaInfo,
         getFragmentController: getFragmentController,
         getFragmentModel: getFragmentModel,
         getStreamInfo: getStreamInfo,
         getMediaInfo: getMediaInfo,
-        getMediaInfoArr: getMediaInfoArr,
         getType: getType,
         isUpdating: isUpdating,
         getRepresentationForQuality: getRepresentationForQuality,
         getPeriodForStreamInfo: getPeriodForStreamInfo,
         getStreamProcessor: getStreamProcessor,
-        getQualityForRepresentation: getQualityForRepresentation,
-        getRepresentationForRepresentationInfo: getRepresentationForRepresentationInfo,
         start: start,
         timeIsBuffered: timeIsBuffered
     };

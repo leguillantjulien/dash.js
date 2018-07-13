@@ -37,6 +37,7 @@ import BaseURLController from './../../streaming/controllers/BaseURLController';
 import OfflineStoreController from './OfflineStoreController';
 import OfflineStream from '../OfflineStream';
 import URLUtils from './../../streaming/utils/URLUtils';
+const Entities = require('html-entities').XmlEntities;
 
 function OfflineController(config) {
 
@@ -56,33 +57,17 @@ function OfflineController(config) {
         timelineConverter,
         urlUtils,
         errHandler,
-        streams,
+        stream,
         logger;
 
     urlUtils = URLUtils(context).getInstance();
     const eventBus = EventBus(context).getInstance();
 
     function setup() {
-        streams = [];
         logger = Debug(context).getInstance().getLogger(instance);
         eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance); //comment for online play
-        eventBus.on(Events.LOADING_COMPLETED, storeFragment, instance);
         eventBus.on(Events.FRAGMENT_COMPLETED, storeFragment, instance);
-        //eventBus.on(Events.STREAM_COMPLETED, createOfflineManifest, instance);
-        eventBus.on(Events.STREAMS_COMPOSED, streamComposed, instance);
-        eventBus.on(Events.INIT_REQUESTED, onInitRequested, instance);
-
-
-    }
-
-    function onInitRequested(e) {
-        console.log('onInitRequested', e);
-
-    }
-
-
-    function streamComposed(e) {
-        console.log('streamComposed', e);
+        eventBus.on(Events.STREAM_COMPLETED, createOfflineManifest, instance);
     }
 
     function setConfig(config) {
@@ -147,16 +132,9 @@ function OfflineController(config) {
             adapter.updatePeriods(manifest);
             baseURLController.initialize(manifest);
             composeStreams();
+        } else {
+            throw new Error('Error onManifestUpdated');
         }
-    }
-
-    function getComposedStream(streamInfo) {
-        for (let i = 0, ln = streams.length; i < ln; i++) {
-            if (streams[i].getId() === streamInfo.id) {
-                return streams[i];
-            }
-        }
-        return null;
     }
 
     function composeStreams() {
@@ -167,55 +145,58 @@ function OfflineController(config) {
             }
             for (let i = 0, ln = streamsInfo.length; i < ln; i++) {
                 const streamInfo = streamsInfo[i];
-                let stream = getComposedStream(streamInfo);
-
-                if (!stream) {
-                    stream = OfflineStream(context).create();
-                    stream.setConfig({
-                        manifestModel: manifestModel,
-                        manifestUpdater: manifestUpdater,
-                        dashManifestModel: dashManifestModel,
-                        adapter: adapter,
-                        timelineConverter: timelineConverter,
-                        errHandler: errHandler,
-                        baseURLController: baseURLController,
-                        offlineController: instance,
-                        abrController: abrController,
-                        metricsModel: metricsModel
-                    });
-                    streams.push(stream); //useless
-                    stream.initialize(streamInfo);
-                }
+                stream = OfflineStream(context).create();
+                stream.setConfig({
+                    manifestModel: manifestModel,
+                    manifestUpdater: manifestUpdater,
+                    dashManifestModel: dashManifestModel,
+                    adapter: adapter,
+                    timelineConverter: timelineConverter,
+                    errHandler: errHandler,
+                    baseURLController: baseURLController,
+                    offlineController: instance,
+                    abrController: abrController,
+                    metricsModel: metricsModel
+                });
+                stream.initialize(streamInfo);
             }
-            eventBus.trigger(Events.STREAMS_COMPOSED); //fin de la lecture des streams
+            eventBus.trigger(Events.STREAMS_COMPOSED);
         } catch (e) {
-            console.log(e);
+            logger.info(e);
             errHandler.manifestError(e.message, 'nostreamscomposed', manifestModel.getValue());
         }
     }
 
     function storeFragment(e) {
         if (e.request !== null) {
+            logger.info('e.request', JSON.stringify(e.request));
+            logger.info('e.response', JSON.stringify(e.response));
+
             let fragmentId = urlUtils.removeHostname(e.request.url);
             offlineStoreController.storeFragment(fragmentId, e.response);
         }
     }
-    /*
+
+    function storeOfflineManifest(e) {
+        alert('storeOfflineManifest', JSON.stringify(e));
+        offlineStoreController.storeOfflineManifest(e);
+    }
+
     function createOfflineManifest(newBaseURL, XMLManifest) {
+        alert('createOfflineManifest');
         logger.info('createOfflineManifest', newBaseURL);
 
-        const Entities = require('html-entities').XmlEntities;
-        newBaseURL = 'offline_indexdb://' + urlUtils.removeHostname(newBaseURL)
+        newBaseURL = 'offline_indexdb://' + urlUtils.removeHostname(newBaseURL);
         logger.info(XMLManifest);
-        let DOM = new DOMParser().parseFromString(XMLManifest, "application/xml");
-        if (DOM.getElementsByTagName("BaseURL")[0] != undefined) {
-            let baseURLAttribute = DOM.getElementsByTagName("BaseURL")[0];
+        let DOM = new DOMParser().parseFromString(XMLManifest, 'application/xml');
+        if (DOM.getElementsByTagName('BaseURL')[0] !== undefined) {
+            let baseURLAttribute = DOM.getElementsByTagName('BaseURL')[0];
             baseURLAttribute.childNodes[0].nodeValue = newBaseURL;
             logger.info('x', baseURLAttribute.childNodes[0].nodeValue);
             let encodedManifest = new Entities().encode(new XMLSerializer().serializeToString(DOM));
             storeOfflineManifest(encodedManifest);
         } else { //create baseURL attribute
-            logger.info('any baseURL attr')
+            logger.info('any baseURL attr');
             let baseURLAttribute = DOM.createElement('baseURL');
             baseURLAttribute.appendChild(DOM.createTextNode(newBaseURL));
             let encodedManifest = new Entities().encode(new XMLSerializer().serializeToString(DOM));
@@ -224,17 +205,11 @@ function OfflineController(config) {
 
     }
 
-    function storeOfflineManifest(e) {
-        offlineStoreController.storeOfflineManifest(e);
-    }
-    */
     instance = {
         load: load,
         onManifestUpdated: onManifestUpdated,
         setConfig: setConfig,
-        //createOfflineManifest: createOfflineManifest,
-        composeStreams: composeStreams,
-        getComposedStream: getComposedStream
+        composeStreams: composeStreams
     };
 
     setup();

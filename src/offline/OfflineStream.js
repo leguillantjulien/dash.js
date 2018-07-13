@@ -35,7 +35,6 @@ import Debug from './../core/Debug';
 import BaseURLController from './../streaming/controllers/BaseURLController';
 import FragmentController from './../streaming/controllers/FragmentController';
 import OfflineStreamDownloader from './net/offlineStreamDownloader';
-import URLUtils from './../streaming/utils/URLUtils';
 import Constants from './../streaming/constants/Constants';
 import RequestModifier from './../streaming/utils/RequestModifier';
 
@@ -50,42 +49,29 @@ function OfflineStream(config) {
         adapter,
         abrController,
         baseURLController,
-        manifestUpdater,
         manifestModel,
         dashManifestModel,
         metricsModel,
         offlineStreamDownloader,
         timelineConverter,
         errHandler,
-        offlineStreamDownloaders,
         streamInfo,
         fragmentController,
-        updateError,
-        urlUtils,
-        isMediaInitialized,
         logger;
 
     function setup() {
-        offlineStreamDownloaders = [];
-        updateError = {};
         logger = Debug(context).getInstance().getLogger(instance);
         resetInitialSettings();
-        urlUtils = URLUtils(context).getInstance();
         eventBus.on(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, this);
 
     }
 
     function resetInitialSettings() {
         streamInfo = null;
-        updateError = {};
     }
 
     function setConfig(config) {
         if (!config) return;
-
-        if (config.manifestUpdater) {
-            manifestUpdater = config.manifestUpdater;
-        }
 
         if (config.manifestModel) {
             manifestModel = config.manifestModel;
@@ -142,13 +128,6 @@ function OfflineStream(config) {
         initializeMediaForType(Constants.MUXED,streamInfo);
         initializeMediaForType(Constants.IMAGE,streamInfo);
 
-        isMediaInitialized = true;
-
-        if (offlineStreamDownloaders.length === 0) {
-            const msg = 'No streams to play.';
-            errHandler.manifestError(msg, 'nostreams', manifestModel.getValue());
-            logger.fatal(msg);
-        }
     }
 
     function initializeMediaForType(type, streamInfo) {
@@ -163,7 +142,6 @@ function OfflineStream(config) {
 
         for (let i = 0, ln = allMediaForType.length; i < ln; i++) {
             mediaInfo = allMediaForType[i];
-            logger.debug(mediaInfo);
         }
 
         createOfflineStreamDownloader(mediaInfo, allMediaForType);
@@ -174,7 +152,6 @@ function OfflineStream(config) {
     }
 
     function createOfflineStreamDownloader(mediaInfo, allMediaForType, optionalSettings) {
-        logger.info('offlineStreamDownloader', JSON.stringify(mediaInfo) , JSON.stringify(allMediaForType));
         offlineStreamDownloader = OfflineStreamDownloader(context).create();
         offlineStreamDownloader.setConfig({
             type: mediaInfo.type,
@@ -195,9 +172,6 @@ function OfflineStream(config) {
 
         if (optionalSettings) {
             offlineStreamDownloader.getIndexHandler().setCurrentTime(optionalSettings.currentTime);
-            offlineStreamDownloaders[optionalSettings.replaceIdx] = offlineStreamDownloader;
-        } else {
-            offlineStreamDownloaders.push(offlineStreamDownloader);
         }
 
         if (optionalSettings && optionalSettings.ignoreMediaInfo) {
@@ -223,8 +197,6 @@ function OfflineStream(config) {
         if (sp.getStreamInfo() !== streamInfo) {
             return;
         }
-
-        updateError[sp.getType()] = e.error;
 
         sp.start();
     }

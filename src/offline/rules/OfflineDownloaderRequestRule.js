@@ -33,9 +33,8 @@ import Debug from './../../core/Debug';
 import FactoryMaker from './../../core/FactoryMaker';
 import FragmentRequest from './../../streaming/vo/FragmentRequest';
 
-function OfflineDownloaderRequestRule(config) {
+function OfflineDownloaderRequestRule() {
 
-    config = config || {};
     const context = this.context;
 
     let instance,
@@ -46,44 +45,31 @@ function OfflineDownloaderRequestRule(config) {
     }
 
 
-    function execute(streamProcessor, requestToReplace) {
-        logger.info('requestToReplace --> ', JSON.stringify(requestToReplace));
+    function execute(streamProcessor) {
         const representationInfo = streamProcessor.getCurrentRepresentationInfo();
         const mediaInfo = representationInfo.mediaInfo;
         const mediaType = mediaInfo.type;
         const indexHandler = streamProcessor.getIndexHandler();
         let time = indexHandler.getCurrentTime();
+        let request;
 
         if (isNaN(time) || (mediaType === Constants.FRAGMENTED_TEXT)) {
             return null;
         }
-        let representation = streamProcessor.getRepresentationForRepresentationInfo(representationInfo);
-        let request;
-        if (requestToReplace) {
-            time = requestToReplace.startTime + (requestToReplace.duration / 2);
-            request = indexHandler.getSegmentRequestForTime(representation, time, {
-                timeThreshold: 0,
-                ignoreIsFinished: true
-            });
-            logger.info('IF request :', JSON.stringify(request));
-        } else {
-            request = indexHandler.getSegmentRequestForTime(representation, time);
-            console.log('streamProcessor.getFragmentModel().isFragmentLoaded(request)', streamProcessor.getFragmentModel().isFragmentLoaded(request));
-            // Then, check if this request was downloaded or not
-            while (request && request.action !== FragmentRequest.ACTION_COMPLETE  && streamProcessor.getFragmentModel().isFragmentLoaded(request)) {
-                console.log('while true', request);
-                // loop until we found not loaded fragment, or no fragment
-                representation = streamProcessor.getRepresentationForRepresentationInfo(representationInfo);
-                request = indexHandler ? indexHandler.getNextSegmentRequest(representation) : null;
-            }
-            if (request) {
-                if (!isNaN(request.startTime + request.duration)) {
-                    indexHandler.setCurrentTime(request.startTime + request.duration);
-                }
-                request.delayLoadingTime = new Date().getTime();
-            }
+        let representation = streamProcessor.getRepresentationForQuality(representationInfo.quality);
+        request = indexHandler.getSegmentRequestForTime(representation, time);
+        // Then, check if this request was downloaded or not
+        while (request && request.action !== FragmentRequest.ACTION_COMPLETE  && streamProcessor.getFragmentModel().isFragmentLoaded(request)) {
+            // loop until we found not loaded fragment, or no fragment
+            representation = streamProcessor.getRepresentationForQuality(representationInfo.quality);
+            request = indexHandler ? indexHandler.getNextSegmentRequest(representation) : null;
         }
-        console.log('return request',request);
+        if (request) {
+            if (!isNaN(request.startTime + request.duration)) {
+                indexHandler.setCurrentTime(request.startTime + request.duration);
+            }
+            request.delayLoadingTime = new Date().getTime();
+        }
         return request;
     }
 

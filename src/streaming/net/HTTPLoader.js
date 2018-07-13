@@ -86,7 +86,6 @@ function HTTPLoader(cfg) {
         }
 
         const handleLoaded = function () {
-            console.log('handleLoaded');
             needFailureReport = false;
 
             request.requestStartDate = requestStartTime;
@@ -95,7 +94,6 @@ function HTTPLoader(cfg) {
         };
 
         const onloadend = function () {
-            console.log('onloadend');
 
             if (needFailureReport) {
                 handleLoaded(false);
