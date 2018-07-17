@@ -60,7 +60,6 @@ function OfflineStreamDownloader(config) {
         currentVoRepresentation,
         offlineDownloaderRequestRule,
         metricsModel,
-        downloaderTimeout,
         isInitialized,
         maxQuality,
         representation,
@@ -144,11 +143,7 @@ function OfflineStreamDownloader(config) {
         if (e.error && e.request.serviceLocation && !isStopped) {
             fragmentModel.executeRequest(e.request);
         }
-
-        eventBus.trigger(Events.FRAGMENT_COMPLETED, { //use for offlineController EVENT
-            request: e.request,
-            response: e.response
-        });
+        download();
     }
 
     function getStreamProcessor() {
@@ -156,7 +151,6 @@ function OfflineStreamDownloader(config) {
     }
 
     function onStreamCompleted(e) {
-        logger.warn('onStreamCompleted : ',e);
         if (e.fragmentModel !== fragmentModel) {
             return;
         }
@@ -166,12 +160,10 @@ function OfflineStreamDownloader(config) {
     }
 
     function stop() {
-        logger.info('stop');
         if (isStopped) {
             return;
         }
         isStopped = true;
-        clearTimeout(downloaderTimeout);
     }
 
     function initialize() {
@@ -262,17 +254,15 @@ function OfflineStreamDownloader(config) {
         }
         currentSegmentsNumbers = currentVoRepresentation.availableSegmentsNumber;
         isStopped = false;
-        logger.info('currentSegmentsNumbers : ', currentSegmentsNumbers);
-
-        startDownloadTimer(0);
+        download();
     }
 
-    function downloader() {
+    function download() {
         if (isStopped) {
             return;
         }
 
-        if (isNaN(currentVoRepresentation.quality)) {
+        if (isNaN(currentVoRepresentation)) {
             if (!isInitialized) {
                 getInitRequest().then(function () {
                     isInitialized = true;
@@ -291,31 +281,21 @@ function OfflineStreamDownloader(config) {
 
         if (indexHandler.isMediaFinished(currentVoRepresentation) ) {
             stop();
-        } else {
-            startDownloadTimer(200);
         }
-
     }
 
-    function startDownloadTimer(value) {
-        clearTimeout(downloaderTimeout);
-        downloaderTimeout = setTimeout(downloader, value);
-    }
 
     function updateRepresentation(newRealAdaptation, voAdaptation, type) {
         const streamInfo = getStreamInfo();
         maxQuality = abrController.getTopQualityIndexFor(type, streamInfo.id);
 
         updating = true;
-        eventBus.trigger(Events.DATA_UPDATE_STARTED, {sender: this});
 
         currentVoRepresentation = updateRepresentations(voAdaptation);
-        console.log('currentVoRepresentation ', currentVoRepresentation);
 
         realAdaptation = newRealAdaptation;
         if (type !== Constants.VIDEO && type !== Constants.AUDIO && type !== Constants.FRAGMENTED_TEXT) {
             updating = false;
-            eventBus.trigger(Events.DATA_UPDATE_COMPLETED, {sender: this, data: realAdaptation, currentRepresentation: currentVoRepresentation});
             return;
         }
 
@@ -330,8 +310,7 @@ function OfflineStreamDownloader(config) {
     }
 
     function updateRepresentations(voAdaptation) {
-        currentVoRepresentation = dashManifestModel.getRepresentationsForAdaptation(voAdaptation)[maxQuality];
-        return currentVoRepresentation;
+        return dashManifestModel.getRepresentationsForAdaptation(voAdaptation)[maxQuality];
     }
 
     function getRepresentation() {
