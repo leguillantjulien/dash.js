@@ -28,15 +28,15 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-import EventBus from './../../core/EventBus';
-import Debug from './../../core/Debug';
-import Events from './../../core/events/Events';
-import FactoryMaker from './../../core/FactoryMaker';
-import DashHandler from './../../dash/DashHandler';
-import Constants from './../../streaming/constants/Constants';
-import OfflineDownloaderRequestRule from './../rules/OfflineDownloaderRequestRule';
+import EventBus from './../core/EventBus';
+import Debug from './../core/Debug';
+import Events from './../core/events/Events';
+import FactoryMaker from './../core/FactoryMaker';
+import DashHandler from './../dash/DashHandler';
+import Constants from './../streaming/constants/Constants';
+import OfflineDownloaderRequestRule from './rules/OfflineDownloaderRequestRule';
 
-function OfflineStreamDownloader(config) {
+function OfflineStreamProcessor(config) {
 
     config = config || {};
     let context = this.context;
@@ -361,6 +361,6 @@ function OfflineStreamDownloader(config) {
 
     return instance;
 }
-OfflineStreamDownloader.__dashjs_factory_name = 'OfflineStreamDownloader';
-const factory = FactoryMaker.getClassFactory(OfflineStreamDownloader);
+OfflineStreamProcessor.__dashjs_factory_name = 'OfflineStreamProcessor';
+const factory = FactoryMaker.getClassFactory(OfflineStreamProcessor);
 export default factory;
