@@ -30,10 +30,12 @@
  */
 import FactoryMaker from './../../core/FactoryMaker';
 import Debug from './../../core/Debug';
+import URLUtils from './../../streaming/utils/URLUtils';
 
 const Entities = require('html-entities').XmlEntities;
 const ELEMENT_TYPE_MPD = 'MPD';
 const ELEMENT_TYPE_PERIOD = 'Period';
+const ELEMENT_TYPE_BaseURL = 'BaseURL';
 const ELEMENT_TYPE_ADAPTATIONSET = 'AdaptationSet';
 const ELEMENT_TYPE_REPRESENTATION = 'Representation';
 const ATTRIBUTE_TYPE_ID = 'id';
@@ -41,6 +43,7 @@ const ATTRIBUTE_TYPE_BANDWITH = 'bandwidth';
 
 function OfflineIndexDBManifestParser() {
     const context = this.context;
+    const urlUtils = URLUtils(context).getInstance();
 
     let instance,
         DOM,
@@ -60,6 +63,7 @@ function OfflineIndexDBManifestParser() {
             if (mpd[i] !== null) {
                 console.log(mpd[i]);
                 browsePeriods(mpd[i]);
+                editBaseURL(mpd[i]);
             }
         }
         logger.warn('finished =>' + new XMLSerializer().serializeToString(DOM));
@@ -67,6 +71,16 @@ function OfflineIndexDBManifestParser() {
         return new Entities().encode(new XMLSerializer().serializeToString(DOM));
     }
 
+    function editBaseURL(currentMPD) {
+        let basesURL = currentMPD.getElementsByTagName(ELEMENT_TYPE_BaseURL);
+        for (let i = 0; i < basesURL.length; i++){
+            if (urlUtils.isSchemeRelative(basesURL[i].innerHTML)) {
+                basesURL[i].innerHTML = 'offline_indexdb://';
+            } else if (basesURL[i].innerHTML != './') {
+                //basesURL[i].innerHTML = 'offline_indexdb://';
+            }
+        }
+    }
     function browsePeriods(currentMPD) {
         let periods = currentMPD.getElementsByTagName(ELEMENT_TYPE_PERIOD);
 
