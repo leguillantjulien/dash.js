@@ -30,27 +30,119 @@
  */
 import FactoryMaker from './../../core/FactoryMaker';
 import Debug from './../../core/Debug';
-import IndexDBStore from './storage/IndexDBStore';
+const Entities = require('html-entities').XmlEntities;
+
+const ELEMENT_TYPE_PERIOD = 'Period';
+const ELEMENT_TYPE_ADAPTATIONSET = 'AdaptationSet';
+const ELEMENT_TYPE_REPRESENTATION = 'Representation';
 
 function OfflineIndexDBManifestParser() {
     const context = this.context;
 
     let instance,
-        indexDBStore,
+        DOM,
         logger;
 
-    indexDBStore = IndexDBStore(context).create();
 
     function setup() {
         logger = Debug(context).getInstance().getLogger(instance);
     }
 
+    function parse(XMLDoc) {
+
+        DOM = new DOMParser().parseFromString(XMLDoc, 'application/xml');
+        let mpd = DOM.getElementsByTagName('MPD') ? DOM.getElementsByTagName('MPD') : null;
+
+        for (let i = 0; i < mpd.length; i++) {
+            if (mpd[i] !== null) {
+                console.log(mpd[i]);
+                browsePeriods(mpd[i]);
+            }
+        }
+        logger.warn('finished ==>' + new XMLSerializer().serializeToString(DOM));
+
+        return new Entities().encode(new XMLSerializer().serializeToString(DOM));
+    }
+
+    function browsePeriods(currentMPD) {
+        let periods = currentMPD.getElementsByTagName(ELEMENT_TYPE_PERIOD);
+
+        console.log('periods.length : ' + periods.length);
+        for (let j = 0; j < periods.length; j++) {
+            browseAdaptationsSet(periods[j]);
+        }
+    }
+
+    function browseAdaptationsSet(currentPeriod) {
+        let adaptationsSet = currentPeriod.getElementsByTagName(ELEMENT_TYPE_ADAPTATIONSET);
+        console.log('Nb d adaptationsSet : ' + adaptationsSet.length);
+        for (let i = 0; i < adaptationsSet.length; i++) {
+            logger.warn(i + ' ème adaptation set');
+            let currentAdaptationSet;
+            currentAdaptationSet = adaptationsSet[i];
+            browseRepresentations(currentAdaptationSet);
+        }
+    }
+
+    function browseRepresentations(currentAdaptationSet) {
+        let bestBandwidth,
+            representations;
+
+        representations = currentAdaptationSet.getElementsByTagName(ELEMENT_TYPE_REPRESENTATION);
+        bestBandwidth = findBestBandwith(representations);
+
+        if (bestBandwidth !== null) {
+            logger.info('bestBandwidth -->' + bestBandwidth);
+            keepOnlyBestRepresentation(currentAdaptationSet, bestBandwidth);
+        } else {
+            throw new Error('Cannot find best Bandwith ! ');
+        }
+    }
+
+    function findBestBandwith(representations) {
+        let bestBandwidth = null;
+
+        for (let i = 0; i < representations.length; i++) {
+            if (representations[i].nodeType === 1) { //element
+                logger.warn('ID : ' + representations[i].getAttribute('id'));
+                let bandwidth = parseInt(representations[i].getAttribute('bandwidth'));
+                if (bestBandwidth < bandwidth) {
+                    bestBandwidth = bandwidth;
+                }
+            }
+        }
+        return bestBandwidth;
+    }
+
+    function keepOnlyBestRepresentation(currentAdaptationSet, bestBandwidth) {
+        let i = 0;
+        let representations = currentAdaptationSet.getElementsByTagName(ELEMENT_TYPE_REPRESENTATION);
+        do {
+            if (parseInt(representations[i].getAttribute('bandwidth')) !== bestBandwidth) {
+                logger.warn('remove : ' + representations[i].getAttribute('id'));
+                logger.warn('i : ' + i);
+                currentAdaptationSet.removeChild(representations[i]);
+            } else if (representations[i + 1] !== undefined) {
+                console.log('next siblin');
+                i++;
+            } else {
+                return;
+            }
+            for (let k = 0; k < representations.length; k++) {
+                logger.warn('ID RESTANTS => ' + representations[k].getAttribute('id'));
+            }
+            console.log('representations.length :' + representations.length);
+        } while (representations.length > 1);
+
+    }
+
     setup();
 
     instance = {
+        parse: parse
     };
 
     return instance;
 }
 OfflineIndexDBManifestParser.__dashjs_factory_name = 'OfflineIndexDBManifestParser';
-export default FactoryMaker.getSingletonFactory(OfflineIndexDBManifestParser);
+export default FactoryMaker.getClassFactory(OfflineIndexDBManifestParser);
