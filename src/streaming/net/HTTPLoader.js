@@ -162,12 +162,15 @@ function HTTPLoader(cfg) {
 
         const modifiedUrl = requestModifier.modifyRequestURL(request.url);
         const verb = request.checkExistenceOnly ? HTTPRequest.HEAD : HTTPRequest.GET;
-        const withCredentials = mediaPlayerModel ? mediaPlayerModel.getXHRWithCredentialsForType(request.type) : null;
+        let withCredentials;
+        if (mediaPlayerModel !== undefined) {
+            withCredentials = mediaPlayerModel ? mediaPlayerModel.getXHRWithCredentialsForType(request.type) : null;
+        }
 
         httpRequest = {
             url: modifiedUrl,
             method: verb,
-            withCredentials: withCredentials,
+            withCredentials: withCredentials ? withCredentials : null,
             request: request,
             onload: onload,
             onend: onloadend,
@@ -204,8 +207,8 @@ function HTTPLoader(cfg) {
             }, (request.delayLoadingTime - now));
         }
     }
-    /*
-    function internalLoad(config, remainingAttempts) {
+
+    /*function internalLoad(config, remainingAttempts) {
         const request = config.request;
         const traces = [];
         let firstProgress = true;
@@ -226,7 +229,7 @@ function HTTPLoader(cfg) {
             request.requestEndDate = new Date();
             request.firstByteDate = request.firstByteDate || requestStartTime;
 
-            if (!request.checkExistenceOnly) {
+            if (metricsModel && !request.checkExistenceOnly) {
                 metricsModel.addHttpRequest(
                     request.mediaType,
                     null,
@@ -346,12 +349,14 @@ function HTTPLoader(cfg) {
 
         const modifiedUrl = requestModifier.modifyRequestURL(request.url);
         const verb = request.checkExistenceOnly ? HTTPRequest.HEAD : HTTPRequest.GET;
-        const withCredentials = mediaPlayerModel.getXHRWithCredentialsForType(request.type);
-
+        let withCredentials;
+        if (mediaPlayerModel) {
+            withCredentials = mediaPlayerModel ? mediaPlayerModel.getXHRWithCredentialsForType(request.type) : null;
+        }
         httpRequest = {
             url: modifiedUrl,
             method: verb,
-            withCredentials: withCredentials,
+            withCredentials: withCredentials ? withCredentials : null,
             request: request,
             onload: onload,
             onend: onloadend,
@@ -400,7 +405,8 @@ function HTTPLoader(cfg) {
     function load(config) {
         if (config.request) {
             offlineLoad(
-                config
+                config,
+                null
             );
 
             // internalLoad(
