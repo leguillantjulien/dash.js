@@ -197,6 +197,11 @@ function ManifestLoader(config) {
                     manifest.loadedTime = new Date();
                     xlinkController.resolveManifestOnLoad(manifest);
 
+                    eventBus.trigger(
+                        Events.ORIGINAL_MANIFEST_LOADED, {
+                            originalManifest: data
+                        }
+                    );
                 } else {
                     eventBus.trigger(
                         Events.INTERNAL_MANIFEST_LOADED, {

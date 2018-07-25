@@ -34,7 +34,7 @@ import FactoryMaker from './../core/FactoryMaker';
 import Debug from './../core/Debug';
 import BaseURLController from './../streaming/controllers/BaseURLController';
 import FragmentController from './../streaming/controllers/FragmentController';
-import OfflineStreamDownloader from './net/offlineStreamDownloader';
+import OfflineStreamProcessor from './OfflineStreamProcessor';
 import Constants from './../streaming/constants/Constants';
 import RequestModifier from './../streaming/utils/RequestModifier';
 
@@ -52,7 +52,8 @@ function OfflineStream(config) {
         manifestModel,
         dashManifestModel,
         metricsModel,
-        offlineStreamDownloader,
+        offlineStreamProcessor,
+        offlineStreamProcessors,
         timelineConverter,
         errHandler,
         streamInfo,
@@ -60,14 +61,15 @@ function OfflineStream(config) {
         logger;
 
     function setup() {
+        offlineStreamProcessors = [];
         logger = Debug(context).getInstance().getLogger(instance);
         resetInitialSettings();
         eventBus.on(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, this);
-
     }
 
     function resetInitialSettings() {
         streamInfo = null;
+        offlineStreamProcessors = [];
     }
 
     function setConfig(config) {
@@ -118,8 +120,6 @@ function OfflineStream(config) {
     }
 
     function initializeMedia(streamInfo) {
-        console.log('initializeMedia', streamInfo);
-
         initializeMediaForType(Constants.VIDEO,streamInfo);
         initializeMediaForType(Constants.AUDIO,streamInfo);
         initializeMediaForType(Constants.TEXT,streamInfo);
@@ -144,16 +144,16 @@ function OfflineStream(config) {
             mediaInfo = allMediaForType[i];
         }
 
-        createOfflineStreamDownloader(mediaInfo, allMediaForType);
+        createOfflineStreamProcessor(mediaInfo, allMediaForType);
     }
 
     function getFragmentController() {
         return fragmentController;
     }
 
-    function createOfflineStreamDownloader(mediaInfo, allMediaForType, optionalSettings) {
-        offlineStreamDownloader = OfflineStreamDownloader(context).create();
-        offlineStreamDownloader.setConfig({
+    function createOfflineStreamProcessor(mediaInfo, allMediaForType, optionalSettings) {
+        offlineStreamProcessor = OfflineStreamProcessor(context).create();
+        offlineStreamProcessor.setConfig({
             type: mediaInfo.type,
             mimeType: mediaInfo.mimeType,
             timelineConverter: timelineConverter,
@@ -167,11 +167,11 @@ function OfflineStream(config) {
             abrController: abrController,
             metricsModel: metricsModel
         });
-
-        offlineStreamDownloader.initialize();
+        offlineStreamProcessors.push(offlineStreamProcessor);
+        offlineStreamProcessor.initialize();
 
         if (optionalSettings) {
-            offlineStreamDownloader.getIndexHandler().setCurrentTime(optionalSettings.currentTime);
+            offlineStreamProcessor.getIndexHandler().setCurrentTime(optionalSettings.currentTime);
         }
 
         if (optionalSettings && optionalSettings.ignoreMediaInfo) {
@@ -184,11 +184,11 @@ function OfflineStream(config) {
                 if (allMediaForType[i].index === mediaInfo.index) {
                     idx = i;
                 }
-                offlineStreamDownloader.addMediaInfo(allMediaForType[i]); //creates text tracks for all adaptations in one stream processor
+                offlineStreamProcessor.addMediaInfo(allMediaForType[i]); //creates text tracks for all adaptations in one stream processor
             }
-            offlineStreamDownloader.selectMediaInfo(allMediaForType[idx]); //sets the initial media info
+            offlineStreamProcessor.selectMediaInfo(allMediaForType[idx]); //sets the initial media info
         } else {
-            offlineStreamDownloader.addMediaInfo(mediaInfo, true);
+            offlineStreamProcessor.addMediaInfo(mediaInfo, true);
         }
     }
 
@@ -212,7 +212,7 @@ function OfflineStream(config) {
     instance = {
         initialize: initialize,
         setConfig: setConfig,
-        offlineStreamDownloader: offlineStreamDownloader,
+        offlineStreamProcessor: offlineStreamProcessor,
         getFragmentController: getFragmentController,
         getStreamInfo: getStreamInfo,
         getId: getId
