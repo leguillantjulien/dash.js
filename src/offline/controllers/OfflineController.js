@@ -36,7 +36,6 @@ import ManifestUpdater from './../../streaming/ManifestUpdater';
 import BaseURLController from './../../streaming/controllers/BaseURLController';
 import OfflineStoreController from './OfflineStoreController';
 import OfflineStream from '../OfflineStream';
-import URLUtils from './../../streaming/utils/URLUtils';
 import OfflineIndexDBManifestParser from '../utils/OfflineIndexDBManifestParser';
 
 function OfflineController(config) {
@@ -55,13 +54,11 @@ function OfflineController(config) {
         dashManifestModel,
         offlineStoreController,
         timelineConverter,
-        urlUtils,
         errHandler,
         stream,
         manifest,
         logger;
 
-    urlUtils = URLUtils(context).getInstance();
     const eventBus = EventBus(context).getInstance();
 
     function setup() {
@@ -69,7 +66,7 @@ function OfflineController(config) {
         eventBus.on(Events.FRAGMENT_LOADING_COMPLETED, storeFragment, instance);
         eventBus.on(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, instance);
         eventBus.on(Events.ORIGINAL_MANIFEST_LOADED, generateOfflineManifest, instance);
-        eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance); //comment for online play
+        eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
     }
 
 
@@ -161,7 +158,6 @@ function OfflineController(config) {
                 const streamInfo = streamsInfo[i];
                 stream = OfflineStream(context).create();
                 stream.setConfig({
-                    manifestModel: manifestModel,
                     manifestUpdater: manifestUpdater,
                     dashManifestModel: dashManifestModel,
                     adapter: adapter,
@@ -177,7 +173,6 @@ function OfflineController(config) {
             eventBus.trigger(Events.STREAMS_COMPOSED);
         } catch (e) {
             logger.info(e);
-            errHandler.manifestError(e.message, 'nostreamscomposed', manifestModel.getValue());
         }
     }
 
@@ -201,7 +196,6 @@ function OfflineController(config) {
         } else {
             throw new Error('falling parsing offline manifest');
         }
-
     }
 
     instance = {

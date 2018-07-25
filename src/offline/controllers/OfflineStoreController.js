@@ -29,7 +29,6 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 import FactoryMaker from './../../core/FactoryMaker';
-import Debug from './../../core/Debug';
 import IndexDBStore from './../storage/IndexDBStore';
 
 function OfflineStoreController(config) {
@@ -38,14 +37,9 @@ function OfflineStoreController(config) {
     const context = this.context;
 
     let instance,
-        logger,
         indexDBStore;
 
     indexDBStore = IndexDBStore(context).create();
-
-    function setup() {
-        logger = Debug(context).getInstance().getLogger(instance);
-    }
 
     function storeFragment(fragmentId, fragmentData) {
         indexDBStore.storeFragment(fragmentId, fragmentData);
@@ -59,8 +53,6 @@ function OfflineStoreController(config) {
         storeFragment: storeFragment,
         storeOfflineManifest: storeOfflineManifest
     };
-
-    setup();
 
     return instance;
 }

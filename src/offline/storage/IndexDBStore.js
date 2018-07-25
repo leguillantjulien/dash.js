@@ -99,7 +99,7 @@ function IndexDBStore(cfg) {
     }
 
     function dropAll() {
-        localforage.clear().then(function () {
+        return localforage.clear().then(function () {
             return Promise.resolve();
         }).catch(function (err) {
             return Promise.reject(err);

@@ -49,7 +49,6 @@ function OfflineStream(config) {
         adapter,
         abrController,
         baseURLController,
-        manifestModel,
         dashManifestModel,
         metricsModel,
         offlineStreamProcessor,
@@ -74,10 +73,6 @@ function OfflineStream(config) {
 
     function setConfig(config) {
         if (!config) return;
-
-        if (config.manifestModel) {
-            manifestModel = config.manifestModel;
-        }
 
         if (config.metricsModel) {
             metricsModel = config.metricsModel;
@@ -158,12 +153,10 @@ function OfflineStream(config) {
             mimeType: mediaInfo.mimeType,
             timelineConverter: timelineConverter,
             adapter: adapter,
-            manifestModel: manifestModel,
             dashManifestModel: dashManifestModel,
             baseURLController: baseURLController,
             errHandler: errHandler,
             stream: instance,
-            fragmentController: fragmentController,
             abrController: abrController,
             metricsModel: metricsModel
         });
@@ -205,17 +198,12 @@ function OfflineStream(config) {
         return streamInfo;
     }
 
-    function getId() {
-        return streamInfo ? streamInfo.id : NaN;
-    }
-
     instance = {
         initialize: initialize,
         setConfig: setConfig,
         offlineStreamProcessor: offlineStreamProcessor,
         getFragmentController: getFragmentController,
-        getStreamInfo: getStreamInfo,
-        getId: getId
+        getStreamInfo: getStreamInfo
     };
 
     setup();

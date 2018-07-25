@@ -64,8 +64,6 @@ function OfflineStreamProcessor(config) {
         maxQuality,
         representation,
         isStopped,
-        currentSegmentsNumbers,
-        downloadedSegments,
         stream;
 
     function setConfig(config) {
@@ -116,16 +114,11 @@ function OfflineStreamProcessor(config) {
             dashManifestModel = config.dashManifestModel;
         }
 
-        if (config.fragmentModel) {
-            fragmentModel = config.fragmentModel;
-        }
-
     }
 
     function setup() {
         isInitialized = false;
         maxQuality = null;
-        downloadedSegments = 0;
         logger = Debug(context).getInstance().getLogger(instance);
         eventBus = EventBus(context).getInstance();
         eventBus.on(Events.STREAM_COMPLETED, onStreamCompleted, instance);
@@ -143,6 +136,7 @@ function OfflineStreamProcessor(config) {
         if (e.error && e.request.serviceLocation && !isStopped) {
             fragmentModel.executeRequest(e.request);
         }
+        //stop();
         download();
     }
 
@@ -176,10 +170,8 @@ function OfflineStreamProcessor(config) {
             timelineConverter: timelineConverter
         });
         indexHandler.initialize(instance);
-        abrController.registerStreamType(type, instance);
 
         fragmentModel = getFragmentController().getModel(type);
-        fragmentModel.setStreamProcessor(instance);
 
         offlineDownloaderRequestRule = OfflineDownloaderRequestRule(context).create();
 
@@ -252,7 +244,6 @@ function OfflineStreamProcessor(config) {
         if (!currentVoRepresentation) {
             throw new Error('Start denied to downloadManager');
         }
-        currentSegmentsNumbers = currentVoRepresentation.availableSegmentsNumber;
         isStopped = false;
         download();
     }
