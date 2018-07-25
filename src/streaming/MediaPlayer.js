@@ -219,9 +219,6 @@ function MediaPlayer() {
             mediaController = MediaController(context).getInstance();
         }
 
-        if (!offlineController) {
-            offlineController = OfflineController(context).getInstance();
-        }
 
         adapter = DashAdapter(context).getInstance();
         dashManifestModel = DashManifestModel(context).getInstance({
