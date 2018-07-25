@@ -37,7 +37,7 @@ import BaseURLController from './../../streaming/controllers/BaseURLController';
 import OfflineStoreController from './OfflineStoreController';
 import OfflineStream from '../OfflineStream';
 import URLUtils from './../../streaming/utils/URLUtils';
-const Entities = require('html-entities').XmlEntities;
+import OfflineIndexDBManifestParser from '../utils/OfflineIndexDBManifestParser';
 
 function OfflineController(config) {
 
@@ -58,6 +58,7 @@ function OfflineController(config) {
         urlUtils,
         errHandler,
         stream,
+        manifest,
         logger;
 
     urlUtils = URLUtils(context).getInstance();
@@ -65,9 +66,20 @@ function OfflineController(config) {
 
     function setup() {
         logger = Debug(context).getInstance().getLogger(instance);
+        eventBus.on(Events.FRAGMENT_LOADING_COMPLETED, storeFragment, instance);
+        eventBus.on(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, instance);
+        eventBus.on(Events.ORIGINAL_MANIFEST_LOADED, generateOfflineManifest, instance);
         eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance); //comment for online play
-        eventBus.on(Events.FRAGMENT_COMPLETED, storeFragment, instance);
-        eventBus.on(Events.STREAM_COMPLETED, createOfflineManifest, instance);
+    }
+
+
+    function onManifestLoaded(e) {
+        console.log('onManifestLoaded');
+        if (e.manifest !== null) {
+            manifest = e.manifest;
+        } else {
+            throw new Error('onManifestLoaded failed');
+        }
     }
 
     function setConfig(config) {
@@ -128,12 +140,14 @@ function OfflineController(config) {
 
     function onManifestUpdated(e) {
         if (!e.error) {
-            const manifest = e.manifest;
-            adapter.updatePeriods(manifest);
-            baseURLController.initialize(manifest);
-            composeStreams();
-        } else {
-            throw new Error('Error onManifestUpdated');
+            try {
+                manifest = e.manifest;
+                adapter.updatePeriods(manifest);
+                baseURLController.initialize(manifest);
+                composeStreams();
+            } catch (err) {
+                throw new Error(err);
+            }
         }
     }
 
@@ -169,38 +183,23 @@ function OfflineController(config) {
 
     function storeFragment(e) {
         if (e.request !== null) {
-            logger.info('e.request', JSON.stringify(e.request));
-            logger.info('e.response', JSON.stringify(e.response));
-
-            let fragmentId = urlUtils.removeHostname(e.request.url);
+            let fragmentId = e.request.representationId + '_' + e.request.index;
             offlineStoreController.storeFragment(fragmentId, e.response);
         }
     }
 
-    function storeOfflineManifest(e) {
-        alert('storeOfflineManifest', JSON.stringify(e));
-        offlineStoreController.storeOfflineManifest(e);
+    function storeOfflineManifest(encodedManifest) {
+        offlineStoreController.storeOfflineManifest(manifest.url,encodedManifest);
     }
 
-    function createOfflineManifest(newBaseURL, XMLManifest) {
-        alert('createOfflineManifest');
-        logger.info('createOfflineManifest', newBaseURL);
 
-        newBaseURL = 'offline_indexdb://' + urlUtils.removeHostname(newBaseURL);
-        logger.info(XMLManifest);
-        let DOM = new DOMParser().parseFromString(XMLManifest, 'application/xml');
-        if (DOM.getElementsByTagName('BaseURL')[0] !== undefined) {
-            let baseURLAttribute = DOM.getElementsByTagName('BaseURL')[0];
-            baseURLAttribute.childNodes[0].nodeValue = newBaseURL;
-            logger.info('x', baseURLAttribute.childNodes[0].nodeValue);
-            let encodedManifest = new Entities().encode(new XMLSerializer().serializeToString(DOM));
-            storeOfflineManifest(encodedManifest);
-        } else { //create baseURL attribute
-            logger.info('any baseURL attr');
-            let baseURLAttribute = DOM.createElement('baseURL');
-            baseURLAttribute.appendChild(DOM.createTextNode(newBaseURL));
-            let encodedManifest = new Entities().encode(new XMLSerializer().serializeToString(DOM));
-            storeOfflineManifest(encodedManifest);
+    function generateOfflineManifest(e) {
+        let parser = OfflineIndexDBManifestParser(context).create();
+        let offlineManifest = parser.parse(e.originalManifest);
+        if (offlineManifest !== null) {
+            storeOfflineManifest(offlineManifest);
+        } else {
+            throw new Error('falling parsing offline manifest');
         }
 
     }
