@@ -31,6 +31,7 @@
 import FactoryMaker from '../../core/FactoryMaker';
 import IndexDBStore from '../storage/IndexDBStore';
 import URLUtils from './../../streaming/utils/URLUtils';
+import Constants from './../../streaming/constants/Constants';
 
 function IndexDBOfflineLoader() {
 
@@ -45,19 +46,19 @@ function IndexDBOfflineLoader() {
 
     function load(config) {
         if (config.request) {
-            if (config.request.mediaType === 'audio' || config.request.mediaType === 'video') {
+            if (config.request.mediaType === Constants.AUDIO || config.request.mediaType === Constants.VIDEO) {
                 let key = config.request.representationId + '_' + config.request.index;
                 indexDBStore.getFragmentByKey(key).then(function (fragment) {
-                    config.success(fragment, null, config.request.url, 'ArrayBuffer');
+                    config.success(fragment, null, config.request.url, Constants.ARRAY_BUFFER);
                 }).catch(function (err) {
                     config.error(err);
                 });
             }
-            else if (config.request.mediaType === 'stream') {
+            else if (config.request.mediaType === Constants.STREAM) {
                 let key = urlUtils.removeHostname(config.request.url);
                 if (key % 1 === 0) {
                     indexDBStore.getManifestByKeyIndex(key).then(function (manifest) {
-                        config.success(manifest, null, config.request.url, 'XML');
+                        config.success(manifest, null, config.request.url, Constants.XML);
                     }).catch(function (err) {
                         config.error(err);
                     });

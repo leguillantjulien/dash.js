@@ -64,6 +64,9 @@ class Constants {
         this.ABR_STRATEGY_THROUGHPUT = 'abrThroughput';
         this.MOVING_AVERAGE_SLIDING_WINDOW = 'slidingWindow';
         this.MOVING_AVERAGE_EWMA = 'ewma';
+        this.XML = 'XML';
+        this.ARRAY_BUFFER = 'ArrayBuffer';
+
     }
 
     constructor () {

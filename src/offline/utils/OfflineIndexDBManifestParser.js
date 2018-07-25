@@ -30,11 +30,14 @@
  */
 import FactoryMaker from './../../core/FactoryMaker';
 import Debug from './../../core/Debug';
-const Entities = require('html-entities').XmlEntities;
 
+const Entities = require('html-entities').XmlEntities;
+const ELEMENT_TYPE_MPD = 'MPD';
 const ELEMENT_TYPE_PERIOD = 'Period';
 const ELEMENT_TYPE_ADAPTATIONSET = 'AdaptationSet';
 const ELEMENT_TYPE_REPRESENTATION = 'Representation';
+const ATTRIBUTE_TYPE_ID = 'id';
+const ATTRIBUTE_TYPE_BANDWITH = 'bandwidth';
 
 function OfflineIndexDBManifestParser() {
     const context = this.context;
@@ -51,7 +54,7 @@ function OfflineIndexDBManifestParser() {
     function parse(XMLDoc) {
 
         DOM = new DOMParser().parseFromString(XMLDoc, 'application/xml');
-        let mpd = DOM.getElementsByTagName('MPD') ? DOM.getElementsByTagName('MPD') : null;
+        let mpd = DOM.getElementsByTagName(ELEMENT_TYPE_MPD) ? DOM.getElementsByTagName(ELEMENT_TYPE_MPD) : null;
 
         for (let i = 0; i < mpd.length; i++) {
             if (mpd[i] !== null) {
@@ -59,7 +62,7 @@ function OfflineIndexDBManifestParser() {
                 browsePeriods(mpd[i]);
             }
         }
-        logger.warn('finished ==>' + new XMLSerializer().serializeToString(DOM));
+        logger.warn('finished =>' + new XMLSerializer().serializeToString(DOM));
 
         return new Entities().encode(new XMLSerializer().serializeToString(DOM));
     }
@@ -67,7 +70,6 @@ function OfflineIndexDBManifestParser() {
     function browsePeriods(currentMPD) {
         let periods = currentMPD.getElementsByTagName(ELEMENT_TYPE_PERIOD);
 
-        console.log('periods.length : ' + periods.length);
         for (let j = 0; j < periods.length; j++) {
             browseAdaptationsSet(periods[j]);
         }
@@ -75,9 +77,8 @@ function OfflineIndexDBManifestParser() {
 
     function browseAdaptationsSet(currentPeriod) {
         let adaptationsSet = currentPeriod.getElementsByTagName(ELEMENT_TYPE_ADAPTATIONSET);
-        console.log('Nb d adaptationsSet : ' + adaptationsSet.length);
+
         for (let i = 0; i < adaptationsSet.length; i++) {
-            logger.warn(i + ' ème adaptation set');
             let currentAdaptationSet;
             currentAdaptationSet = adaptationsSet[i];
             browseRepresentations(currentAdaptationSet);
@@ -92,10 +93,9 @@ function OfflineIndexDBManifestParser() {
         bestBandwidth = findBestBandwith(representations);
 
         if (bestBandwidth !== null) {
-            logger.info('bestBandwidth -->' + bestBandwidth);
             keepOnlyBestRepresentation(currentAdaptationSet, bestBandwidth);
         } else {
-            throw new Error('Cannot find best Bandwith ! ');
+            throw new Error('Cannot find best Bandwith !');
         }
     }
 
@@ -104,8 +104,8 @@ function OfflineIndexDBManifestParser() {
 
         for (let i = 0; i < representations.length; i++) {
             if (representations[i].nodeType === 1) { //element
-                logger.warn('ID : ' + representations[i].getAttribute('id'));
-                let bandwidth = parseInt(representations[i].getAttribute('bandwidth'));
+                logger.warn('ID : ' + representations[i].getAttribute(ATTRIBUTE_TYPE_ID));
+                let bandwidth = parseInt(representations[i].getAttribute(ATTRIBUTE_TYPE_BANDWITH));
                 if (bestBandwidth < bandwidth) {
                     bestBandwidth = bandwidth;
                 }
@@ -118,18 +118,16 @@ function OfflineIndexDBManifestParser() {
         let i = 0;
         let representations = currentAdaptationSet.getElementsByTagName(ELEMENT_TYPE_REPRESENTATION);
         do {
-            if (parseInt(representations[i].getAttribute('bandwidth')) !== bestBandwidth) {
-                logger.warn('remove : ' + representations[i].getAttribute('id'));
-                logger.warn('i : ' + i);
+            if (parseInt(representations[i].getAttribute(ATTRIBUTE_TYPE_BANDWITH)) !== bestBandwidth) {
+                logger.warn('remove : ' + representations[i].getAttribute(ATTRIBUTE_TYPE_ID));
                 currentAdaptationSet.removeChild(representations[i]);
             } else if (representations[i + 1] !== undefined) {
-                console.log('next siblin');
                 i++;
             } else {
                 return;
             }
             for (let k = 0; k < representations.length; k++) {
-                logger.warn('ID RESTANTS => ' + representations[k].getAttribute('id'));
+                logger.warn('ID RESTANTS => ' + representations[k].getAttribute(ATTRIBUTE_TYPE_ID));
             }
             console.log('representations.length :' + representations.length);
         } while (representations.length > 1);
