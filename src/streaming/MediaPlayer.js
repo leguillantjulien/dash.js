@@ -34,6 +34,7 @@ import UTCTiming from '../dash/vo/UTCTiming';
 import PlaybackController from './controllers/PlaybackController';
 import StreamController from './controllers/StreamController';
 import MediaController from './controllers/MediaController';
+import BaseURLController from './controllers/BaseURLController';
 import ManifestLoader from './ManifestLoader';
 import ErrorHandler from './utils/ErrorHandler';
 import Capabilities from './utils/Capabilities';
@@ -638,10 +639,11 @@ function MediaPlayer() {
      */
     function getDVRSeekOffset(value) {
         let metric = getDVRInfoMetric();
-        let liveDelay = playbackController.getLiveDelay();
         if (!metric) {
             return 0;
         }
+
+        let liveDelay = playbackController.getLiveDelay();
 
         let val = metric.range.start + value;
 
@@ -2550,6 +2552,28 @@ function MediaPlayer() {
     /*
     ---------------------------------------------------------------------------
 
+        PROTECTION CONTROLLER MANAGEMENT
+
+    ---------------------------------------------------------------------------
+    */
+
+    /**
+     * Set the value for the ProtectionController and MediaKeys life cycle. If true, the
+     * ProtectionController and then created MediaKeys and MediaKeySessions will be preserved during
+     * the MediaPlayer lifetime.
+     *
+     * @param {boolean=} value - True or false flag.
+     *
+     * @memberof module:MediaPlayer
+     * @instance
+     */
+    function keepProtectionMediaKeys(value) {
+        mediaPlayerModel.setKeepProtectionMediaKeys(value);
+    }
+
+    /*
+    ---------------------------------------------------------------------------
+
         TOOLS AND OTHERS FUNCTIONS
 
     ---------------------------------------------------------------------------
@@ -2711,9 +2735,13 @@ function MediaPlayer() {
         mediaController.reset();
         textController.reset();
         if (protectionController) {
-            protectionController.reset();
-            protectionController = null;
-            detectProtection();
+            if (mediaPlayerModel.getKeepProtectionMediaKeys()) {
+                protectionController.stop();
+            } else {
+                protectionController.reset();
+                protectionController = null;
+                detectProtection();
+            }
         }
     }
 
@@ -2864,6 +2892,7 @@ function MediaPlayer() {
                 metricsModel: metricsModel,
                 playbackController: playbackController,
                 protectionController: protectionController,
+                baseURLController: BaseURLController(context).getInstance(),
                 errHandler: errHandler,
                 events: Events,
                 constants: Constants,
@@ -3069,8 +3098,9 @@ function MediaPlayer() {
         getUseDeadTimeLatencyForAbr: getUseDeadTimeLatencyForAbr,
         setUseDeadTimeLatencyForAbr: setUseDeadTimeLatencyForAbr,
         getThumbnail: getThumbnail,
-        reset: reset,
-        record: record
+        record: record,
+        keepProtectionMediaKeys: keepProtectionMediaKeys,
+        reset: reset
     };
 
     setup();
