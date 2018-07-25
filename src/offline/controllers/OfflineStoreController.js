@@ -48,11 +48,11 @@ function OfflineStoreController(config) {
     }
 
     function storeFragment(fragmentId, fragmentData) {
-        indexDBStore.storeFragment(fragmentId,fragmentData);
+        indexDBStore.storeFragment(fragmentId, fragmentData);
     }
 
-    function storeOfflineManifest(manifest) {
-        indexDBStore.storeManifest(manifest);
+    function storeOfflineManifest(manifestKey, manifest) {
+        indexDBStore.storeManifest(manifestKey,manifest);
     }
 
     instance = {

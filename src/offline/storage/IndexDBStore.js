@@ -31,6 +31,7 @@
 import FactoryMaker from './../../core/FactoryMaker';
 import Debug from './../../core/Debug';
 const localforage = require('localforage');
+const entities = require('html-entities').XmlEntities;
 
 function IndexDBStore(cfg) {
 
@@ -59,7 +60,8 @@ function IndexDBStore(cfg) {
         logger = Debug(context).getInstance().getLogger(instance);
     }
 
-    function readFragmentByKey(key) {
+    function getFragmentByKey(key) {
+        logger.info('key => ' + key);
         return fragmentStore.getItem(key).then(function (value) {
             return Promise.resolve(value);
         }).catch(function (err) {
@@ -67,22 +69,20 @@ function IndexDBStore(cfg) {
         });
     }
 
-    function readManifestByKey(key) {
-        return manifestStore.getItem(key).then(function (value) {
-            return Promise.resolve(value);
+    function getManifestByKeyIndex(key) {
+        return manifestStore.key(parseInt(key)).then(function (keyName) {
+            return manifestStore.getItem(keyName).then(function (value) {
+                let manifest = entities.decode(value);
+                return Promise.resolve(manifest);
+            });
         }).catch(function (err) {
             return Promise.reject(err);
         });
     }
 
-    function storeManifest(manifest) {
-        return manifestStore.length().then(function (nbKeys) {
-
-            return manifestStore.setItem(nbKeys + 1, manifest, function (value) {
-                return Promise.resolve(value);
-            }).catch(function (err) {
-                return Promise.reject(err);
-            });
+    function storeManifest(manifestKey, manifest) {
+        return manifestStore.setItem(manifestKey, manifest, function (value) {
+            return Promise.resolve(value);
         }).catch(function (err) {
             return Promise.reject(err);
         });
@@ -106,27 +106,12 @@ function IndexDBStore(cfg) {
         });
     }
 
-    /*
-    function saveGenericManifest() {
-        return manifestStore.length().then(function (nbKeys) {
-            let value = "&lt;MPD mediaPresentationDuration=&quot;PT634.566S&quot; minBufferTime=&quot;PT2.00S&quot; profiles=&quot;urn:hbbtv:dash:profile:isoff-live:2012,urn:mpeg:dash:profile:isoff-live:2011&quot; type=&quot;static&quot; xmlns=&quot;urn:mpeg:dash:schema:mpd:2011&quot; xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xsi:schemaLocation=&quot;urn:mpeg:DASH:schema:MPD:2011 DASH-MPD.xsd&quot;&gt;&lt;BaseURL&gt;offline_indexdb://akamai/bbb_30fps/&lt;/BaseURL&gt;&lt;Period&gt;&lt;AdaptationSet mimeType=&quot;video/mp4&quot; contentType=&quot;video&quot; subsegmentAlignment=&quot;true&quot; subsegmentStartsWithSAP=&quot;1&quot; par=&quot;16:9&quot;&gt;&lt;SegmentTemplate duration=&quot;120&quot; timescale=&quot;30&quot; media=&quot;$RepresentationID$/$RepresentationID$_$Number$.m4v&quot; startNumber=&quot;1&quot; initialization=&quot;$RepresentationID$/$RepresentationID$_0.m4v&quot;/&gt;&lt;Representation id=&quot;bbb_30fps_3840x2160_12000k&quot; codecs=&quot;avc1.640033&quot; bandwidth=&quot;14931538&quot; width=&quot;3840&quot; height=&quot;2160&quot; frameRate=&quot;30&quot; sar=&quot;1:1&quot; scanType=&quot;progressive&quot;/&gt;&lt;/AdaptationSet&gt;&lt;AdaptationSet mimeType=&quot;audio/mp4&quot; contentType=&quot;audio&quot; subsegmentAlignment=&quot;true&quot; subsegmentStartsWithSAP=&quot;1&quot;&gt;&lt;Accessibility schemeIdUri=&quot;urn:tva:metadata:cs:AudioPurposeCS:2007&quot; value=&quot;6&quot;/&gt;&lt;Role schemeIdUri=&quot;urn:mpeg:dash:role:2011&quot; value=&quot;main&quot;/&gt;&lt;SegmentTemplate duration=&quot;192512&quot; timescale=&quot;48000&quot; media=&quot;$RepresentationID$/$RepresentationID$_$Number$.m4a&quot; startNumber=&quot;1&quot; initialization=&quot;$RepresentationID$/$RepresentationID$_0.m4a&quot;/&gt;&lt;Representation id=&quot;bbb_a64k&quot; codecs=&quot;mp4a.40.5&quot; bandwidth=&quot;67071&quot; audioSamplingRate=&quot;48000&quot;&gt;&lt;AudioChannelConfiguration schemeIdUri=&quot;urn:mpeg:dash:23003:3:audio_channel_configuration:2011&quot; value=&quot;2&quot;/&gt;&lt;/Representation&gt;&lt;/AdaptationSet&gt;&lt;/Period&gt;&lt;/MPD&gt;";
-            return manifestStore.setItem(nbKeys + 1, value, function () {
-                return Promise.resolve();
-            }).catch(function (err) {
-                return Promise.reject(err);
-            });
-        }).catch(function (err) {
-            return Promise.reject(err);
-        });
-    }
-    */
 
     instance = {
         dropAll: dropAll,
-        readFragmentByKey: readFragmentByKey,
-        readManifestByKey: readManifestByKey,
+        getFragmentByKey: getFragmentByKey,
+        getManifestByKeyIndex: getManifestByKeyIndex,
         storeFragment: storeFragment,
-        //saveGenericManifest: saveGenericManifest,
         storeManifest: storeManifest
     };
     setup();
