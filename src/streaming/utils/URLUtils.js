@@ -63,8 +63,14 @@ function URLUtils() {
         try {
             // this will throw if baseurl is undefined, invalid etc
             if (offlineUrlRegex.test(baseUrl)) {
-                return baseUrl + url;
-            }else return new window.URL(url, baseUrl).toString();
+                if ((baseUrl.charAt(baseUrl.length - 1 ) % 1 === 0)) {
+                    return baseUrl.substring(0, baseUrl.length - 1) + url;
+                } else {
+                    return baseUrl + url;
+                }
+            } else {
+                return new window.URL(url, baseUrl).toString();
+            }
         } catch (e) {
             return url;
         }
@@ -84,6 +90,9 @@ function URLUtils() {
      * @private
      */
     const dumbURLResolver = (url, baseUrl) => {
+        console.log('dumbURLResolver');
+        console.log(url);
+        console.log(baseUrl);
         let baseUrlParseFunc = parseBaseUrl;
 
         if (!baseUrl) {
@@ -130,6 +139,7 @@ function URLUtils() {
      * @instance
      */
     function parseBaseUrl(url) {
+        console.log('parseBaseUrl ' + url);
         const slashIndex = url.indexOf('/');
         const lastSlashIndex = url.lastIndexOf('/');
 
@@ -158,6 +168,8 @@ function URLUtils() {
      * @instance
      */
     function parseOrigin(url) {
+        console.log('parseOrigin ' + url);
+
         const matches = url.match(originRegex);
 
         if (matches) {
@@ -176,6 +188,8 @@ function URLUtils() {
      * @instance
      */
     function removeHostname(url) {
+        console.log('removeHostname ' + url);
+
         if (offlineUrlRegex.test(url)) {
             url = url.replace(/(^\w+:|^)\/\//, '');
         } else {
