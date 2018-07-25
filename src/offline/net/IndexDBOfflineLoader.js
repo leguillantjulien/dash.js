@@ -32,7 +32,6 @@ import FactoryMaker from '../../core/FactoryMaker';
 import IndexDBStore from '../storage/IndexDBStore';
 import URLUtils from './../../streaming/utils/URLUtils';
 
-const Entities = require('html-entities').XmlEntities;
 function IndexDBOfflineLoader() {
 
     const context = this.context;
@@ -46,22 +45,26 @@ function IndexDBOfflineLoader() {
 
     function load(config) {
         if (config.request) {
-            let key = urlUtils.removeHostname(config.request.url);
-            if (key % 1 === 0) {
-                indexDBStore.readManifestByKey(key).then(function (manifest) {
-                    let manifestDecoded = new Entities().decode(manifest);
-                    config.success(manifestDecoded, null, config.request.url);
+            if (config.request.mediaType === 'audio' || config.request.mediaType === 'video') {
+                let key = config.request.representationId + '_' + config.request.index;
+                indexDBStore.getFragmentByKey(key).then(function (fragment) {
+                    config.success(fragment, null, config.request.url, 'ArrayBuffer');
                 }).catch(function (err) {
                     config.error(err);
-                    throw new Error('Cannot find a minifest with this key : ' + key);
                 });
-            } else {
-                indexDBStore.readFragmentByKey(key).then(function (fragment) {
-                    config.success(fragment, null, config.request.url);
-                }).catch(function (err) {
-                    config.error(err);
-                    throw new Error('Cannot find a fragment with this key : ' + key);
-                });
+            }
+            else if (config.request.mediaType === 'stream') {
+                let key = urlUtils.removeHostname(config.request.url);
+                if (key % 1 === 0) {
+                    indexDBStore.getManifestByKeyIndex(key).then(function (manifest) {
+                        config.success(manifest, null, config.request.url, 'XML');
+                    }).catch(function (err) {
+                        config.error(err);
+                    });
+                }
+            }
+            else {
+                config.error(new Error('MediaType cannot be found'));
             }
         }
     }
