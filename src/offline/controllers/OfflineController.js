@@ -37,6 +37,7 @@ import BaseURLController from './../../streaming/controllers/BaseURLController';
 import OfflineStoreController from './OfflineStoreController';
 import OfflineStream from '../OfflineStream';
 import OfflineIndexDBManifestParser from '../utils/OfflineIndexDBManifestParser';
+import URLUtils from './../../streaming/utils/URLUtils';
 
 function OfflineController(config) {
 
@@ -60,6 +61,7 @@ function OfflineController(config) {
         logger;
 
     const eventBus = EventBus(context).getInstance();
+    const urlUtils = URLUtils(context).getInstance();
 
     function setup() {
         logger = Debug(context).getInstance().getLogger(instance);
@@ -189,12 +191,14 @@ function OfflineController(config) {
 
 
     function generateOfflineManifest(e) {
-        let parser = OfflineIndexDBManifestParser(context).create();
-        let offlineManifest = parser.parse(e.originalManifest);
-        if (offlineManifest !== null) {
-            storeOfflineManifest(offlineManifest);
-        } else {
-            throw new Error('falling parsing offline manifest');
+        if (!urlUtils.isOfflineURL(manifest.url)) {
+            let parser = OfflineIndexDBManifestParser(context).create();
+            let offlineManifest = parser.parse(e.originalManifest);
+            if (offlineManifest !== null) {
+                storeOfflineManifest(offlineManifest);
+            } else {
+                throw new Error('falling parsing offline manifest');
+            }
         }
     }
 
