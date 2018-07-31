@@ -31,8 +31,6 @@
 import Constants from './constants/Constants';
 import XlinkController from './controllers/XlinkController';
 import URLLoader from './net/URLLoader';
-import IndexDBOfflineLoader from '../offline/net/IndexDBOfflineLoader';
-import HTTPLoader from './net/HTTPLoader';
 import URLUtils from './utils/URLUtils';
 import TextRequest from './vo/TextRequest';
 import DashJSError from './vo/DashJSError';
@@ -67,14 +65,11 @@ function ManifestLoader(config) {
         eventBus.on(Events.XLINK_READY, onXlinkReady, instance);
 
         urlLoader = URLLoader(context).create({
-            httpLoader: HTTPLoader(context).create({
-                errHandler: config.errHandler,
-                metricsModel: config.metricsModel,
-                mediaPlayerModel: config.mediaPlayerModel,
-                requestModifier: config.requestModifier,
-                useFetch: config.mediaPlayerModel.getLowLatencyEnabled()
-            }),
-            indexDBOfflineLoader: IndexDBOfflineLoader(context).create()
+            errHandler: config.errHandler,
+            metricsModel: config.metricsModel,
+            mediaPlayerModel: config.mediaPlayerModel,
+            requestModifier: config.requestModifier,
+            useFetch: config.mediaPlayerModel.getLowLatencyEnabled()
         });
 
         xlinkController = XlinkController(context).create({

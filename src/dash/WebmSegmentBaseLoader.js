@@ -9,7 +9,7 @@ import {
     HTTPRequest
 } from '../streaming/vo/metrics/HTTPRequest';
 import FragmentRequest from '../streaming/vo/FragmentRequest';
-import HTTPLoader from '../streaming/net/HTTPLoader';
+import URLLoader from '../streaming/net/URLLoader';
 
 function WebmSegmentBaseLoader() {
 
@@ -23,7 +23,7 @@ function WebmSegmentBaseLoader() {
         requestModifier,
         metricsModel,
         mediaPlayerModel,
-        httpLoader,
+        urlLoader,
         baseURLController;
 
     function setup() {
@@ -95,7 +95,7 @@ function WebmSegmentBaseLoader() {
 
     function initialize() {
         requestModifier = RequestModifier(context).getInstance();
-        httpLoader = HTTPLoader(context).create({
+        urlLoader = URLLoader(context).create({
             errHandler: errHandler,
             metricsModel: metricsModel,
             mediaPlayerModel: mediaPlayerModel,
@@ -281,7 +281,7 @@ function WebmSegmentBaseLoader() {
             callback(null);
         };
 
-        httpLoader.load({
+        urlLoader.load({
             request: request,
             success: onload,
             error: onloadend
@@ -330,7 +330,7 @@ function WebmSegmentBaseLoader() {
             });
         };
 
-        httpLoader.load({
+        urlLoader.load({
             request: request,
             success: onload,
             error: onloadend
@@ -375,7 +375,7 @@ function WebmSegmentBaseLoader() {
             callback(null, representation, type);
         };
 
-        httpLoader.load({
+        urlLoader.load({
             request: request,
             success: onload,
             error: onloadend

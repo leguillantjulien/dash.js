@@ -31,6 +31,7 @@
 import FactoryMaker from '../../core/FactoryMaker';
 import URLUtils from '../utils/URLUtils';
 import IndexDBOfflineLoader from '../../offline/net/IndexDBOfflineLoader';
+import HTTPLoader from '../../streaming/net/HTTPLoader';
 
 function URLLoader(cfg) {
 
@@ -42,10 +43,18 @@ function URLLoader(cfg) {
         httpLoader,
         indexDBOfflineLoader;
 
-    httpLoader = cfg.httpLoader;
+    httpLoader = HTTPLoader(context).create({
+        errHandler: cfg.errHandler,
+        metricsModel: cfg.metricsModel,
+        mediaPlayerModel: cfg.mediaPlayerModel,
+        requestModifier: cfg.requestModifier,
+        useFetch: cfg.mediaPlayerModel ? cfg.mediaPlayerModel.getLowLatencyEnabled() : null
+    });
+
     indexDBOfflineLoader = IndexDBOfflineLoader(context).create();
 
     function load(config) {
+        console.log('config.request.url' + config.request.url);
         if (urlUtils.isOfflineURL(config.request.url)) {
             indexDBOfflineLoader.load(config);
         } else {

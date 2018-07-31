@@ -28,7 +28,6 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
-import HTTPLoader from './net/HTTPLoader';
 import URLLoader from './net/URLLoader';
 import HeadRequest from './vo/HeadRequest';
 import DashJSError from './vo/DashJSError';
@@ -51,13 +50,11 @@ function FragmentLoader(config) {
 
     function setup() {
         urlLoader = URLLoader(context).create({
-            httpLoader: HTTPLoader(context).create({
-                errHandler: config.errHandler,
-                metricsModel: config.metricsModel,
-                mediaPlayerModel: config.mediaPlayerModel,
-                requestModifier: config.requestModifier,
-                useFetch: config.mediaPlayerModel ? config.mediaPlayerModel.getLowLatencyEnabled() : null
-            })
+            errHandler: config.errHandler,
+            metricsModel: config.metricsModel,
+            mediaPlayerModel: config.mediaPlayerModel,
+            requestModifier: config.requestModifier,
+            useFetch: config.mediaPlayerModel ? config.mediaPlayerModel.getLowLatencyEnabled() : null
         });
     }
 
