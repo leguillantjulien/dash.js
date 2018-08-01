@@ -90,9 +90,6 @@ function URLUtils() {
      * @private
      */
     const dumbURLResolver = (url, baseUrl) => {
-        console.log('dumbURLResolver');
-        console.log(url);
-        console.log(baseUrl);
         let baseUrlParseFunc = parseBaseUrl;
 
         if (!baseUrl) {
@@ -139,7 +136,6 @@ function URLUtils() {
      * @instance
      */
     function parseBaseUrl(url) {
-        console.log('parseBaseUrl ' + url);
         const slashIndex = url.indexOf('/');
         const lastSlashIndex = url.lastIndexOf('/');
 
@@ -168,8 +164,6 @@ function URLUtils() {
      * @instance
      */
     function parseOrigin(url) {
-        console.log('parseOrigin ' + url);
-
         const matches = url.match(originRegex);
 
         if (matches) {
@@ -188,15 +182,12 @@ function URLUtils() {
      * @instance
      */
     function removeHostname(url) {
-        console.log('removeHostname ' + url);
-
         if (offlineUrlRegex.test(url)) {
-            url = url.replace(/(^\w+:|^)\/\//, '');
+            return url.replace(/(^\w+:|^)\/\//, '');
         } else {
             let urlParts = /^(?:\w+\:\/\/)?([^\/]+)(.*)$/.exec(url); //[1] = host / [2] = path
-            url = urlParts[2].substring(1);
+            return urlParts[2].substring(1);
         }
-        return url;
     }
 
     /**

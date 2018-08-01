@@ -41,7 +41,7 @@ function IndexDBOfflineLoader() {
     let instance,
         indexDBStore;
 
-    function setup(){
+    function setup() {
         indexDBStore = IndexDBStore(context).getInstance();
     }
 

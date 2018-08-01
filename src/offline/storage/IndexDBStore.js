@@ -69,7 +69,7 @@ function IndexDBStore() {
             return Promise.resolve(value);
         }).catch(function (err) {
             return Promise.reject(err);
-            });
+        });
 
     }
 
@@ -112,7 +112,6 @@ function IndexDBStore() {
         let key = fragmentId;
         let value = fragmentData;
         return fragmentStore.setItem(key, value, function () {
-            console.log("fragment stored " + fragmentId);
             return Promise.resolve(value);
         }).catch(function (err) {
             return Promise.reject(err);
