@@ -58,6 +58,7 @@ function OfflineController(config) {
         errHandler,
         stream,
         manifest,
+        isStorageInit,
         logger;
 
     const eventBus = EventBus(context).getInstance();
@@ -69,6 +70,7 @@ function OfflineController(config) {
         eventBus.on(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, instance);
         eventBus.on(Events.ORIGINAL_MANIFEST_LOADED, generateOfflineManifest, instance);
         eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
+        isStorageInit = false;
     }
 
 
@@ -180,25 +182,41 @@ function OfflineController(config) {
 
     function storeFragment(e) {
         if (e.request !== null) {
-            let fragmentId = e.request.representationId + '_' + e.request.index;
-            offlineStoreController.storeFragment(fragmentId, e.response);
+            let fragmentName = e.request.representationId + '_' + e.request.index;
+            if (!isStorageInit) {
+                setFragmentStore().then(function () {
+                    isStorageInit = true;
+                    offlineStoreController.storeFragment(fragmentName, e.response);
+                });
+            } else {
+                offlineStoreController.storeFragment(fragmentName, e.response);
+            }
+
         }
     }
 
-    function storeOfflineManifest(encodedManifest) {
-        offlineStoreController.storeOfflineManifest(manifest.url,encodedManifest);
+    function setFragmentStore() {
+        return offlineStoreController.countManifest().then(function (count) {
+            let storeName = 'manifest_' + (count + 1);
+            offlineStoreController.setFragmentStore(storeName);
+        });
     }
 
+    function storeOfflineManifest(encodedManifest) {
+        offlineStoreController.storeOfflineManifest(encodedManifest);
+    }
 
     function generateOfflineManifest(e) {
         if (!urlUtils.isOfflineURL(manifest.url)) {
             let parser = OfflineIndexDBManifestParser(context).create();
-            let offlineManifest = parser.parse(e.originalManifest);
-            if (offlineManifest !== null) {
-                storeOfflineManifest(offlineManifest);
-            } else {
-                throw new Error('falling parsing offline manifest');
-            }
+            parser.parse(e.originalManifest).then(function (offlineManifest) {
+                if (offlineManifest !== null) {
+                    storeOfflineManifest(offlineManifest);
+                } else {
+                    throw new Error('falling parsing offline manifest');
+                }
+            });
+
         }
     }
 

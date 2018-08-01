@@ -41,12 +41,21 @@ function IndexDBOfflineLoader() {
     let instance,
         indexDBStore;
 
-    indexDBStore = IndexDBStore(context).create();
-
+    function setup(){
+        indexDBStore = IndexDBStore(context).getInstance();
+    }
 
     function load(config) {
         if (config.request) {
-            if (config.request.mediaType === Constants.AUDIO || config.request.mediaType === Constants.VIDEO) {
+            if (
+                config.request.mediaType === Constants.AUDIO    ||
+                config.request.mediaType === Constants.VIDEO    ||
+                config.request.mediaType === Constants.TEXT     ||
+                config.request.mediaType === Constants.MUXED    ||
+                config.request.mediaType === Constants.FRAGMENTED_TEXT  ||
+                config.request.mediaType === Constants.EMBEDDED_TEXT    ||
+                config.request.type === 'MediaSegment'
+            ) {
                 let key = config.request.representationId + '_' + config.request.index;
                 indexDBStore.getFragmentByKey(key).then(function (fragment) {
                     config.success(fragment, null, config.request.url, Constants.ARRAY_BUFFER);
@@ -57,8 +66,9 @@ function IndexDBOfflineLoader() {
             else if (config.request.mediaType === Constants.STREAM) {
                 let key = urlUtils.removeHostname(config.request.url);
                 if (key % 1 === 0) {
-                    indexDBStore.getManifestByKeyIndex(key).then(function (manifest) {
-                        config.success(manifest, null, config.request.url, Constants.XML);
+                    indexDBStore.getManifestByKey(key).then(function (manifest) {
+                        indexDBStore.setFragmentStore(manifest.fragmentStore);
+                        config.success(manifest.manifest, null, config.request.url, Constants.XML);
                     }).catch(function (err) {
                         config.error(err);
                     });
@@ -69,6 +79,8 @@ function IndexDBOfflineLoader() {
             }
         }
     }
+
+    setup();
 
     instance = {
         load: load

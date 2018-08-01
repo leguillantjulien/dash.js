@@ -39,19 +39,31 @@ function OfflineStoreController(config) {
     let instance,
         indexDBStore;
 
-    indexDBStore = IndexDBStore(context).create();
+    indexDBStore = IndexDBStore(context).getInstance();
+
+    function setFragmentStore(storeName) {
+        indexDBStore.setFragmentStore(storeName);
+    }
 
     function storeFragment(fragmentId, fragmentData) {
         indexDBStore.storeFragment(fragmentId, fragmentData);
     }
 
-    function storeOfflineManifest(manifestKey, manifest) {
-        indexDBStore.storeManifest(manifestKey,manifest);
+    function storeOfflineManifest(manifest) {
+        indexDBStore.storeManifest(manifest);
+    }
+
+    function countManifest() {
+        return indexDBStore.countManifest().then(function (keys) {
+            return keys;
+        });
     }
 
     instance = {
         storeFragment: storeFragment,
-        storeOfflineManifest: storeOfflineManifest
+        storeOfflineManifest: storeOfflineManifest,
+        setFragmentStore: setFragmentStore,
+        countManifest: countManifest
     };
 
     return instance;

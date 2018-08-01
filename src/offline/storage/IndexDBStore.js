@@ -33,9 +33,8 @@ import Debug from './../../core/Debug';
 const localforage = require('localforage');
 const entities = require('html-entities').XmlEntities;
 
-function IndexDBStore(cfg) {
+function IndexDBStore() {
 
-    cfg = cfg || {};
     const context = this.context;
     let instance,
         logger,
@@ -46,51 +45,74 @@ function IndexDBStore(cfg) {
         driver: localforage.INDEXEDDB,
         name: 'dash_offline_db',
         version: 1.0,
-        storeName: 'manifest-v2'
-    });
-
-    fragmentStore = localforage.createInstance({
-        driver: localforage.INDEXEDDB,
-        name: 'dash_offline_db',
-        version: 1.0,
-        storeName: 'fragment-v2'
+        storeName: 'manifest'
     });
 
     function setup() {
         logger = Debug(context).getInstance().getLogger(instance);
     }
 
+    function setFragmentStore(storeName) {
+        console.log('setStore  ' + storeName);
+        fragmentStore = localforage.createInstance({
+            driver: localforage.INDEXEDDB,
+            name: 'dash_offline_db',
+            version: 1.0,
+            storeName: storeName
+        });
+        return;
+    }
+
     function getFragmentByKey(key) {
-        logger.info('key => ' + key);
         return fragmentStore.getItem(key).then(function (value) {
+            console.log('getFragmentByKey => ' + value);
             return Promise.resolve(value);
         }).catch(function (err) {
             return Promise.reject(err);
-        });
-    }
-
-    function getManifestByKeyIndex(key) {
-        return manifestStore.key(parseInt(key)).then(function (keyName) {
-            return manifestStore.getItem(keyName).then(function (value) {
-                let manifest = entities.decode(value);
-                return Promise.resolve(manifest);
             });
+
+    }
+
+    function getManifestByKey(key) {
+        return manifestStore.getItem('manifest').then(function (value) {
+
+            if (value.length) {
+                value[key - 1].manifest = entities.decode(value[key - 1].manifest);
+                //console.log('value[key] ' + JSON.stringify(value[key - 1]));
+                return Promise.resolve(value[key - 1]);
+            } else {
+                return Promise.reject('Cannot found manifest with this key !');
+            }
         }).catch(function (err) {
             return Promise.reject(err);
         });
     }
 
-    function storeManifest(manifestKey, manifest) {
-        return manifestStore.setItem(manifestKey, manifest, function (value) {
-            return Promise.resolve(value);
+    function countManifest() {
+        return manifestStore.getItem('manifest').then(function (value) {
+            if (value) {
+                return Promise.resolve(value.length);
+            } else {
+                return Promise.resolve(0);
+            }
         }).catch(function (err) {
-            return Promise.reject(err);
+            return Promise.resolve(err);
         });
     }
+
+    function storeManifest(manifest) {
+        manifestStore.getItem('manifest').then(function (results) {
+            let manifestsArray = results ? results : [];
+            manifestsArray.push(manifest);
+            manifestStore.setItem('manifest',manifestsArray);
+        });
+    }
+
     function storeFragment(fragmentId, fragmentData) {
         let key = fragmentId;
         let value = fragmentData;
         return fragmentStore.setItem(key, value, function () {
+            console.log("fragment stored " + fragmentId);
             return Promise.resolve(value);
         }).catch(function (err) {
             return Promise.reject(err);
@@ -110,14 +132,15 @@ function IndexDBStore(cfg) {
     instance = {
         dropAll: dropAll,
         getFragmentByKey: getFragmentByKey,
-        getManifestByKeyIndex: getManifestByKeyIndex,
+        getManifestByKey: getManifestByKey,
         storeFragment: storeFragment,
-        storeManifest: storeManifest
+        storeManifest: storeManifest,
+        setFragmentStore: setFragmentStore,
+        countManifest: countManifest
     };
     setup();
     return instance;
 }
 
 IndexDBStore.__dashjs_factory_name = 'IndexDBStore';
-const factory = FactoryMaker.getClassFactory(IndexDBStore);
-export default factory;
+export default FactoryMaker.getSingletonFactory(IndexDBStore);
