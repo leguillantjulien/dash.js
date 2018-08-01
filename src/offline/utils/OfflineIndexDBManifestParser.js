@@ -31,80 +31,158 @@
 import FactoryMaker from './../../core/FactoryMaker';
 import Debug from './../../core/Debug';
 import URLUtils from './../../streaming/utils/URLUtils';
+import OfflineStoreController from './../controllers/OfflineStoreController';
 
 const Entities = require('html-entities').XmlEntities;
 const ELEMENT_TYPE_MPD = 'MPD';
 const ELEMENT_TYPE_PERIOD = 'Period';
 const ELEMENT_TYPE_BaseURL = 'BaseURL';
 const ELEMENT_TYPE_ADAPTATIONSET = 'AdaptationSet';
+const ELEMENT_TYPE_SEGMENT_TEMPLATE = 'SegmentTemplate';
 const ELEMENT_TYPE_REPRESENTATION = 'Representation';
 const ATTRIBUTE_TYPE_ID = 'id';
 const ATTRIBUTE_TYPE_BANDWITH = 'bandwidth';
 
 function OfflineIndexDBManifestParser() {
     const context = this.context;
-    const urlUtils = URLUtils(context).getInstance();
 
     let instance,
         DOM,
+        urlUtils,
+        offlineStoreController,
+        manifestId,
+        originalURL,
         logger;
 
 
     function setup() {
         logger = Debug(context).getInstance().getLogger(instance);
+        offlineStoreController = OfflineStoreController(context).getInstance();
+        urlUtils = URLUtils(context).getInstance();
     }
 
     function parse(XMLDoc) {
-
         DOM = new DOMParser().parseFromString(XMLDoc, 'application/xml');
         let mpd = DOM.getElementsByTagName(ELEMENT_TYPE_MPD) ? DOM.getElementsByTagName(ELEMENT_TYPE_MPD) : null;
 
         for (let i = 0; i < mpd.length; i++) {
             if (mpd[i] !== null) {
-                console.log(mpd[i]);
+                editBaseURLAttribute(mpd[i]);
                 browsePeriods(mpd[i]);
-                editBaseURL(mpd[i]);
             }
         }
-        logger.warn('finished =>' + new XMLSerializer().serializeToString(DOM));
+        //TODO : remove promise timeOut
+        return wait(2000).then(function () {
+            let encodedManifest = encodeManifest(DOM);
+            return {
+                'fragmentStore': 'manifest_' + getManifestId(),
+                'originalURL': getOriginalURL(),
+                'manifest': encodedManifest
+            };
+        });
+    }
 
+    function encodeManifest(DOM) {
+        logger.info('encodedManifest ' + new XMLSerializer().serializeToString(DOM));
         return new Entities().encode(new XMLSerializer().serializeToString(DOM));
     }
 
-    function editBaseURL(currentMPD) {
-        let basesURL = currentMPD.getElementsByTagName(ELEMENT_TYPE_BaseURL);
-        for (let i = 0; i < basesURL.length; i++){
-            if (urlUtils.isSchemeRelative(basesURL[i].innerHTML)) {
-                basesURL[i].innerHTML = 'offline_indexdb://';
-            } else if (basesURL[i].innerHTML != './') {
-                //basesURL[i].innerHTML = 'offline_indexdb://';
+    function editBaseURLAttribute(currentMPD) {
+        let basesURL,
+            fragmentId,
+            representationId;
+
+        offlineStoreController.countManifest().then(function (keys) {
+            manifestId = keys + 1;
+            basesURL = currentMPD.getElementsByTagName(ELEMENT_TYPE_BaseURL);
+            for (let i = 0; i < basesURL.length; i++) {
+                let parent = basesURL[i].parentNode;
+
+                if (parent.nodeName === 'MPD') {
+                    originalURL = basesURL[i].innerHTML;
+                    basesURL[i].innerHTML = 'offline_indexdb://';
+                } else if (parent.nodeName === 'Representation') {
+                    let adaptationsSet = parent.parentNode;
+                    if (adaptationsSet.nodeName == 'AdaptationSet') {
+
+                        if (urlUtils.isHTTPS(basesURL[i].innerHTML) || urlUtils.isHTTPURL(basesURL[i].innerHTML)) {
+                            fragmentId = getFragmentId(basesURL[i].innerHTML);
+                            representationId = getBestRepresentationId(adaptationsSet);
+                            basesURL[i].innerHTML = 'offline_indexdb://' + representationId + '_' + fragmentId;
+                        } else if (basesURL[i].innerHTML === './') {
+                            basesURL[i].innerHTML = 'offline_indexdb://';
+                        } else {
+                            fragmentId = getFragmentId(basesURL[i].innerHTML);
+                            representationId = getBestRepresentationId(adaptationsSet);
+                            basesURL[i].innerHTML = representationId + '_' + fragmentId;
+                        }
+                    } else {
+                        throw new Error('Any AdaptationSet Parent ! ');
+                    }
+                } else {
+                    throw new Error('Any Representation Parent ! ');
+                }
+                //logger.debug('AFTER innerHTML ==> ' + basesURL[i].innerHTML);
             }
-        }
+        }).catch(function (err) {
+            logger.warn(err);
+        });
     }
+
     function browsePeriods(currentMPD) {
         let periods = currentMPD.getElementsByTagName(ELEMENT_TYPE_PERIOD);
-
         for (let j = 0; j < periods.length; j++) {
             browseAdaptationsSet(periods[j]);
         }
     }
 
     function browseAdaptationsSet(currentPeriod) {
-        let adaptationsSet = currentPeriod.getElementsByTagName(ELEMENT_TYPE_ADAPTATIONSET);
+        let adaptationsSet,
+            currentAdaptationSet,
+            currentAdaptationType,
+            representations;
+
+        adaptationsSet = currentPeriod.getElementsByTagName(ELEMENT_TYPE_ADAPTATIONSET);
 
         for (let i = 0; i < adaptationsSet.length; i++) {
-            let currentAdaptationSet;
             currentAdaptationSet = adaptationsSet[i];
-            browseRepresentations(currentAdaptationSet);
+            currentAdaptationType = findAdaptationSetMimeType(currentAdaptationSet) ? findAdaptationSetMimeType(currentAdaptationSet) : null;
+
+            representations = findRepresentations(currentAdaptationSet);
+            if (representations.length >= 1) {
+                findAndKeepOnlyBestRepresentation(currentAdaptationSet, representations);
+            }
+
+            if (getSegmentsTemplates(currentAdaptationSet).length >= 1) {
+                editSegmentTemplateAttributes(currentAdaptationSet);
+            }
         }
     }
 
-    function browseRepresentations(currentAdaptationSet) {
-        let bestBandwidth,
-            representations;
+    function findAdaptationSetMimeType(currentAdaptationSet) {
+        return currentAdaptationSet.getAttribute('mimeType');
+    }
 
-        representations = currentAdaptationSet.getElementsByTagName(ELEMENT_TYPE_REPRESENTATION);
-        bestBandwidth = findBestBandwith(representations);
+    function findRepresentations(currentAdaptationSet) {
+        return currentAdaptationSet.getElementsByTagName(ELEMENT_TYPE_REPRESENTATION);
+    }
+
+    function getSegmentsTemplates(currentAdaptationSet) {
+        return currentAdaptationSet.getElementsByTagName(ELEMENT_TYPE_SEGMENT_TEMPLATE);
+    }
+
+    function editSegmentTemplateAttributes(segmentsTemplates) {
+        for (let i = 0; i < segmentsTemplates.length; i++) {
+            let media = segmentsTemplates[i].getAttribute('media');
+            media = '$RepresentationID$_$Number$' + media.substring(media.indexOf('.'), media.length); //id + extension
+            segmentsTemplates[i].setAttribute('media', media);
+            segmentsTemplates[i].setAttribute('initialization','$RepresentationID$_0.m4v');
+        }
+    }
+
+    function findAndKeepOnlyBestRepresentation(currentAdaptationSet, representations) {
+        console.log('findAndKeepOnlyBestRepresentation');
+        let bestBandwidth = findBestBandwith(representations);
 
         if (bestBandwidth !== null) {
             keepOnlyBestRepresentation(currentAdaptationSet, bestBandwidth);
@@ -113,12 +191,27 @@ function OfflineIndexDBManifestParser() {
         }
     }
 
+    function keepOnlyBestRepresentation(currentAdaptationSet, bestBandwidth) {
+        let i = 0;
+        let representations = currentAdaptationSet.getElementsByTagName(ELEMENT_TYPE_REPRESENTATION);
+
+        do {
+            if (parseInt(representations[i].getAttribute(ATTRIBUTE_TYPE_BANDWITH)) !== bestBandwidth) {
+                currentAdaptationSet.removeChild(representations[i]);
+            } else if (representations[i + 1] !== undefined) {
+                i++;
+            } else {
+                return;
+            }
+        } while (representations.length > 1);
+    }
+
     function findBestBandwith(representations) {
         let bestBandwidth = null;
 
         for (let i = 0; i < representations.length; i++) {
             if (representations[i].nodeType === 1) { //element
-                logger.warn('ID : ' + representations[i].getAttribute(ATTRIBUTE_TYPE_ID));
+                //logger.warn('ID : ' + representations[i].getAttribute(ATTRIBUTE_TYPE_ID));
                 let bandwidth = parseInt(representations[i].getAttribute(ATTRIBUTE_TYPE_BANDWITH));
                 if (bestBandwidth < bandwidth) {
                     bestBandwidth = bandwidth;
@@ -128,24 +221,32 @@ function OfflineIndexDBManifestParser() {
         return bestBandwidth;
     }
 
-    function keepOnlyBestRepresentation(currentAdaptationSet, bestBandwidth) {
-        let i = 0;
-        let representations = currentAdaptationSet.getElementsByTagName(ELEMENT_TYPE_REPRESENTATION);
-        do {
-            if (parseInt(representations[i].getAttribute(ATTRIBUTE_TYPE_BANDWITH)) !== bestBandwidth) {
-                logger.warn('remove : ' + representations[i].getAttribute(ATTRIBUTE_TYPE_ID));
-                currentAdaptationSet.removeChild(representations[i]);
-            } else if (representations[i + 1] !== undefined) {
-                i++;
-            } else {
-                return;
-            }
-            for (let k = 0; k < representations.length; k++) {
-                logger.warn('ID RESTANTS => ' + representations[k].getAttribute(ATTRIBUTE_TYPE_ID));
-            }
-            console.log('representations.length :' + representations.length);
-        } while (representations.length > 1);
+    //  UTILS
 
+    function wait(delay) {
+        return new Promise(function (resolve) {
+            setTimeout(resolve, delay);
+        });
+    }
+
+    function getBestRepresentationId(currentAdaptationSet) {
+        let bestRepresentation = currentAdaptationSet.getElementsByTagName(ELEMENT_TYPE_REPRESENTATION)[0];
+        console.log(bestRepresentation.getAttribute(ATTRIBUTE_TYPE_ID));
+        return bestRepresentation.getAttribute(ATTRIBUTE_TYPE_ID);
+    }
+
+    function getManifestId() {
+        return manifestId;
+    }
+
+    function getOriginalURL() {
+        return originalURL;
+    }
+
+    function getFragmentId(url) {
+        let idxFragId = url.lastIndexOf('/');
+        //logger.warn('fragId : ' + url.substring(idxFragId + 1, url.length));
+        return url.substring(idxFragId,url.length);
     }
 
     setup();
