@@ -175,6 +175,9 @@ function OfflineStreamProcessor(config) {
 
         offlineDownloaderRequestRule = OfflineDownloaderRequestRule(context).create();
 
+        if (dashManifestModel.getIsTextTrack(mimeType)) {
+            getInitRequest();
+        }
     }
 
     function getIndexHandler() {
@@ -230,8 +233,9 @@ function OfflineStreamProcessor(config) {
     }
 
     function getInitRequest() {
+        if (!representation) return null;
         let initRequest = indexHandler.getInitRequest(representation);
-        return Promise.resolve(fragmentModel.executeRequest(initRequest));
+        return fragmentModel.executeRequest(initRequest);
     }
 
 
@@ -255,11 +259,8 @@ function OfflineStreamProcessor(config) {
 
         if (isNaN(currentVoRepresentation)) {
             if (!isInitialized) {
-                getInitRequest().then(function () {
-                    isInitialized = true;
-                }).catch(function () {
-                    throw new Error('Cannot initialize first request');
-                });
+                getInitRequest();
+                isInitialized = true;
             } else {
                 let request = offlineDownloaderRequestRule.execute(instance);
 
@@ -285,7 +286,7 @@ function OfflineStreamProcessor(config) {
         currentVoRepresentation = updateRepresentations(voAdaptation);
 
         realAdaptation = newRealAdaptation;
-        if (type !== Constants.VIDEO && type !== Constants.AUDIO && type !== Constants.FRAGMENTED_TEXT) {
+        if (type !== Constants.VIDEO && type !== Constants.AUDIO  && type !== Constants.TEXT && type !== Constants.FRAGMENTED_TEXT) {
             updating = false;
             return;
         }
