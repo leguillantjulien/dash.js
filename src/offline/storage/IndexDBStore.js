@@ -65,7 +65,7 @@ function IndexDBStore() {
 
     function getFragmentByKey(key) {
         return fragmentStore.getItem(key).then(function (value) {
-            console.log('getFragmentByKey => ' + value);
+            //console.log('getFragmentByKey => ' + value);
             return Promise.resolve(value);
         }).catch(function (err) {
             return Promise.reject(err);

@@ -207,14 +207,23 @@ function OfflineController(config) {
     }
 
     function generateOfflineManifest(e) {
+        console.log('manifest.url => ' + manifest.url);
         if (!urlUtils.isOfflineURL(manifest.url)) {
             let parser = OfflineIndexDBManifestParser(context).create();
-            parser.parse(e.originalManifest).then(function (offlineManifest) {
-                if (offlineManifest !== null) {
-                    storeOfflineManifest(offlineManifest);
-                } else {
-                    throw new Error('falling parsing offline manifest');
-                }
+            offlineStoreController.countManifest().then(function (keys) {
+                parser.parse(e.originalManifest).then(function (parsedManifest) {
+                    if (parsedManifest !== null && keys !== null) {
+                        let manifestId = keys + 1;
+                        let offlineManifest = {
+                            'fragmentStore': 'manifest_' + manifestId,
+                            'originalURL': manifest.url,
+                            'manifest': parsedManifest
+                        };
+                        storeOfflineManifest(offlineManifest);
+                    } else {
+                        throw new Error('falling parsing offline manifest');
+                    }
+                });
             });
 
         }

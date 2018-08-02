@@ -31,7 +31,6 @@
 import FactoryMaker from './../../core/FactoryMaker';
 import Debug from './../../core/Debug';
 import URLUtils from './../../streaming/utils/URLUtils';
-import OfflineStoreController from './../controllers/OfflineStoreController';
 
 const Entities = require('html-entities').XmlEntities;
 const ELEMENT_TYPE_MPD = 'MPD';
@@ -49,15 +48,11 @@ function OfflineIndexDBManifestParser() {
     let instance,
         DOM,
         urlUtils,
-        offlineStoreController,
-        manifestId,
-        originalURL,
         logger;
 
 
     function setup() {
         logger = Debug(context).getInstance().getLogger(instance);
-        offlineStoreController = OfflineStoreController(context).getInstance();
         urlUtils = URLUtils(context).getInstance();
     }
 
@@ -73,12 +68,7 @@ function OfflineIndexDBManifestParser() {
         }
         //TODO : remove promise timeOut
         return wait(2000).then(function () {
-            let encodedManifest = encodeManifest(DOM);
-            return {
-                'fragmentStore': 'manifest_' + getManifestId(),
-                'originalURL': getOriginalURL(),
-                'manifest': encodedManifest
-            };
+            return encodeManifest(DOM);
         });
     }
 
@@ -92,41 +82,35 @@ function OfflineIndexDBManifestParser() {
             fragmentId,
             representationId;
 
-        offlineStoreController.countManifest().then(function (keys) {
-            manifestId = keys + 1;
-            basesURL = currentMPD.getElementsByTagName(ELEMENT_TYPE_BaseURL);
-            for (let i = 0; i < basesURL.length; i++) {
-                let parent = basesURL[i].parentNode;
+        basesURL = currentMPD.getElementsByTagName(ELEMENT_TYPE_BaseURL);
+        for (let i = 0; i < basesURL.length; i++) {
+            let parent = basesURL[i].parentNode;
 
-                if (parent.nodeName === 'MPD') {
-                    originalURL = basesURL[i].innerHTML;
-                    basesURL[i].innerHTML = 'offline_indexdb://';
-                } else if (parent.nodeName === 'Representation') {
-                    let adaptationsSet = parent.parentNode;
-                    if (adaptationsSet.nodeName == 'AdaptationSet') {
+            if (parent.nodeName === 'MPD') {
+                basesURL[i].innerHTML = 'offline_indexdb://';
+            } else if (parent.nodeName === 'Representation') {
+                let adaptationsSet = parent.parentNode;
+                if (adaptationsSet.nodeName == 'AdaptationSet') {
 
-                        if (urlUtils.isHTTPS(basesURL[i].innerHTML) || urlUtils.isHTTPURL(basesURL[i].innerHTML)) {
-                            fragmentId = getFragmentId(basesURL[i].innerHTML);
-                            representationId = getBestRepresentationId(adaptationsSet);
-                            basesURL[i].innerHTML = 'offline_indexdb://' + representationId + '_' + fragmentId;
-                        } else if (basesURL[i].innerHTML === './') {
-                            basesURL[i].innerHTML = 'offline_indexdb://';
-                        } else {
-                            fragmentId = getFragmentId(basesURL[i].innerHTML);
-                            representationId = getBestRepresentationId(adaptationsSet);
-                            basesURL[i].innerHTML = representationId + '_' + fragmentId;
-                        }
+                    if (urlUtils.isHTTPS(basesURL[i].innerHTML) || urlUtils.isHTTPURL(basesURL[i].innerHTML)) {
+                        fragmentId = getFragmentId(basesURL[i].innerHTML);
+                        representationId = getBestRepresentationId(adaptationsSet);
+                        basesURL[i].innerHTML = 'offline_indexdb://' + representationId + '_' + fragmentId;
+                    } else if (basesURL[i].innerHTML === './') {
+                        basesURL[i].innerHTML = 'offline_indexdb://';
                     } else {
-                        throw new Error('Any AdaptationSet Parent ! ');
+                        fragmentId = getFragmentId(basesURL[i].innerHTML);
+                        representationId = getBestRepresentationId(adaptationsSet);
+                        basesURL[i].innerHTML = representationId + '_' + fragmentId;
                     }
                 } else {
-                    throw new Error('Any Representation Parent ! ');
+                    throw new Error('Any AdaptationSet Parent ! ');
                 }
-                //logger.debug('AFTER innerHTML ==> ' + basesURL[i].innerHTML);
+            } else {
+                throw new Error('Any Representation Parent ! ');
             }
-        }).catch(function (err) {
-            logger.warn(err);
-        });
+            //logger.debug('AFTER innerHTML ==> ' + basesURL[i].innerHTML);
+        }
     }
 
     function browsePeriods(currentMPD) {
@@ -233,14 +217,6 @@ function OfflineIndexDBManifestParser() {
         let bestRepresentation = currentAdaptationSet.getElementsByTagName(ELEMENT_TYPE_REPRESENTATION)[0];
         console.log(bestRepresentation.getAttribute(ATTRIBUTE_TYPE_ID));
         return bestRepresentation.getAttribute(ATTRIBUTE_TYPE_ID);
-    }
-
-    function getManifestId() {
-        return manifestId;
-    }
-
-    function getOriginalURL() {
-        return originalURL;
     }
 
     function getFragmentId(url) {
