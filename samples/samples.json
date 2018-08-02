@@ -100,7 +100,7 @@
                 "description": "Example showing how to use dash.js to play streams with ClearKey DRM protection.",
                 "href": "drm/clearkey.html"
             }
-            
+
         ]
     },
     {
@@ -185,6 +185,16 @@
                 "title": "Monitoring the stream",
                 "description": "This example shows how to add monitoring to the stream, fetch values from the Player etc",
                 "href": "monitoring/index.html"
+            }
+        ]
+    },
+    {
+        "section": "Offline ",
+        "samples": [
+            {
+                "title": "Offline mode",
+                "description": "Example showing how store and read back streams without network connexion to Dash",
+                "href": "offline/index.html"
             }
         ]
     }
