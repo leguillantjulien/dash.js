@@ -33,7 +33,7 @@ angular.module('DashIFTestVectorsService', ['ngResource']).factory('dashifTestVe
     });
 });
 
-app.controller('DashController', function ($scope, sources, contributors, dashifTestVectors) {
+app.controller('DashController', function ($scope, $timeout, sources, contributors, dashifTestVectors) {
     $scope.selectedItem = {
         url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd'
     };
@@ -215,6 +215,9 @@ app.controller('DashController', function ($scope, sources, contributors, dashif
     $scope.error = '';
     $scope.errorType = '';
 
+    //Offline
+    $scope.recordProgression = 0;
+    let progressTimer;
     ////////////////////////////////////////
     //
     // Player Setup
@@ -464,19 +467,33 @@ app.controller('DashController', function ($scope, sources, contributors, dashif
         $scope.controlbar.enable();
     };
 
+    $scope.doDownload = function () {
+        $scope.initSession();
+        $scope.player.record($scope.selectedItem.url);
+        $scope.updateRecordProgression();
+    }
+
     $scope.doStop = function () {
         $scope.player.attachSource(null);
         $scope.controlbar.reset();
         stopMetricsInterval();
     }
 
-    $scope.doDownload = function () {
-        $scope.initSession();
-        $scope.player.record($scope.selectedItem.url);
+    $scope.updateRecordProgression = function () {
+        progressTimer = $timeout(function () {
+            $scope.recordProgression = $scope.player.getRecordProgression();
+            $scope.updateRecordProgression();
+        }, 200);
+    }
+
+    $scope.getRecordProgression = function () {
+        return $scope.recordProgression;
     }
 
     $scope.doStopDownload = function () {
         $scope.player.stopRecord();
+        $timeout.cancel(progressTimer);
+        progressTimer = null;
     }
 
     $scope.changeTrackSwitchMode = function (mode, type) {

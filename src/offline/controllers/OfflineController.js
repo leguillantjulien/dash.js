@@ -237,12 +237,21 @@ function OfflineController(config) {
         }
     }
 
+    function getRecordProgression() {
+        let globalProgression = 0;
+        for (let i = 0, ln = streams.length; i < ln; i++) {
+            globalProgression = + streams[i].getRecordProgression();
+        }
+        return Math.round(globalProgression * 100);
+    }
+
     instance = {
         load: load,
         onManifestUpdated: onManifestUpdated,
         setConfig: setConfig,
         composeStreams: composeStreams,
-        stopRecord: stopRecord
+        stopRecord: stopRecord,
+        getRecordProgression: getRecordProgression
     };
 
     setup();

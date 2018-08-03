@@ -57,13 +57,16 @@ function OfflineStream(config) {
         errHandler,
         streamInfo,
         fragmentController,
+        availableSegments,
         logger;
 
     function setup() {
         offlineStreamProcessors = [];
+        availableSegments = 0;
         logger = Debug(context).getInstance().getLogger(instance);
         resetInitialSettings();
         eventBus.on(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, this);
+
     }
 
     function resetInitialSettings() {
@@ -112,6 +115,7 @@ function OfflineStream(config) {
             dashManifestModel: dashManifestModel
         });
         initializeMedia(streamInfo);
+        setAvailableSegments();
     }
 
     function initializeMedia(streamInfo) {
@@ -204,13 +208,36 @@ function OfflineStream(config) {
         }
     }
 
+    function getRecordProgression() {
+        let getDownloadedSegments = 0;
+
+        for (let i = 0; i < offlineStreamProcessors.length; i++) {
+            getDownloadedSegments = getDownloadedSegments + offlineStreamProcessors[i].getDownloadedSegments();
+        }
+        return getDownloadedSegments / getAvailableSegments();
+    }
+
+    function setAvailableSegments() {
+        console.log('offlineStreamProcessors.length ' + offlineStreamProcessors.length);
+        for (let i = 0; i < offlineStreamProcessors.length; i++) {
+            console.log(offlineStreamProcessors[i].getAvailableSegmentsNumber());
+            availableSegments = availableSegments +  offlineStreamProcessors[i].getAvailableSegmentsNumber();
+        }
+    }
+    function getAvailableSegments() {
+        return availableSegments;
+    }
+
     instance = {
         initialize: initialize,
         setConfig: setConfig,
         offlineStreamProcessor: offlineStreamProcessor,
         getFragmentController: getFragmentController,
         getStreamInfo: getStreamInfo,
-        stopOfflineStreamProcessors: stopOfflineStreamProcessors
+        stopOfflineStreamProcessors: stopOfflineStreamProcessors,
+        getRecordProgression: getRecordProgression,
+        getAvailableSegments: getAvailableSegments,
+        setAvailableSegments: setAvailableSegments
     };
 
     setup();

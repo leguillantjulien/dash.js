@@ -59,6 +59,7 @@ function OfflineStreamProcessor(config) {
         realAdaptation,
         currentVoRepresentation,
         offlineDownloaderRequestRule,
+        downloadedSegments,
         metricsModel,
         isInitialized,
         maxQuality,
@@ -119,6 +120,7 @@ function OfflineStreamProcessor(config) {
     function setup() {
         isInitialized = false;
         maxQuality = null;
+        downloadedSegments = -1;
         logger = Debug(context).getInstance().getLogger(instance);
         eventBus = EventBus(context).getInstance();
         eventBus.on(Events.STREAM_COMPLETED, onStreamCompleted, instance);
@@ -132,6 +134,7 @@ function OfflineStreamProcessor(config) {
         if (e.sender !== fragmentModel) {
             return;
         }
+        downloadedSegments++;
 
         if (e.error && e.request.serviceLocation && !isStopped) {
             fragmentModel.executeRequest(e.request);
@@ -274,6 +277,7 @@ function OfflineStreamProcessor(config) {
         if (indexHandler.isMediaFinished(currentVoRepresentation) ) {
             stop();
         }
+        getAvailableSegmentsNumber();
     }
 
 
@@ -329,6 +333,14 @@ function OfflineStreamProcessor(config) {
         return mediaInfo;
     }
 
+    function getAvailableSegmentsNumber() {
+        return currentVoRepresentation.availableSegmentsNumber;
+    }
+
+    function getDownloadedSegments() {
+        return downloadedSegments;
+    }
+
     instance = {
         initialize: initialize,
         setConfig: setConfig,
@@ -347,7 +359,9 @@ function OfflineStreamProcessor(config) {
         getStreamProcessor: getStreamProcessor,
         start: start,
         stop: stop,
-        timeIsBuffered: timeIsBuffered
+        timeIsBuffered: timeIsBuffered,
+        getAvailableSegmentsNumber: getAvailableSegmentsNumber,
+        getDownloadedSegments: getDownloadedSegments
     };
 
     setup();

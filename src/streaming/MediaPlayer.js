@@ -1928,6 +1928,12 @@ function MediaPlayer() {
         }
     }
 
+    function getRecordProgression() {
+        if (offlineControllerInitialized) {
+            return offlineController.getRecordProgression();
+        }
+    }
+
     function createRecordControllers() {
         errHandler = ErrorHandler(context).getInstance();
 
@@ -3120,6 +3126,7 @@ function MediaPlayer() {
         record: record,
         keepProtectionMediaKeys: keepProtectionMediaKeys,
         stopRecord: stopRecord,
+        getRecordProgression: getRecordProgression,
         reset: reset
     };
 

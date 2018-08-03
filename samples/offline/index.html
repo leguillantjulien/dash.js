@@ -110,7 +110,7 @@
                 </div>
                 <input type="text" class="form-control" ng-model="selectedItem.url">
                 <span class="input-group-btn">
-                        <button class="btn btn-default" ng-click="toggleOptionsGutter(!optionsGutter)" ng-cloak>{{getOptionsButtonLabel()}}</button>
+                    <button class="btn btn-default" ng-click="toggleOptionsGutter(!optionsGutter)" ng-cloak>{{getOptionsButtonLabel()}}</button>
                     <button class="btn btn-default" type="button" ng-click="doStop()">Stop</button>
                     <button class="btn btn-primary" type="button" ng-click="doLoad()">Load</button>
                 </span>
@@ -305,16 +305,17 @@
             </div>
 
             <!-- DOWNLOAD SECTION -->
-            <div class="row">
-                    <div class="col-md-3">
-                        <span class="input-group-btn">
-                                <button class="btn btn-primary" type="button" ng-click="doDownload()">Download</button>
-                                <button class="btn btn-default" type="button" ng-click="stopDownload()">Stop Download</button>
-                        </span>
-                    </div>
+            <div class="col-md-2">
+                <div class="list-group">
+                    <a href="#" class="list-group-item list-group-item-action active" ng-click="doDownload()">Download</a>
+                    <a href="#" class="list-group-item list-group-item-action" ng-click="doStopDownload()">Stop Download</a>
                 </div>
-
+                <div class="progress">
+                    <!--TODO : Add multibar for each content type -->
+                    <div class="progress-bar" role="progressbar" ng-style="{ 'width': getRecordProgression() + '%' }" aria-valuenow="{{ getRecordProgression() }}" aria-valuemin="0" aria-valuemax="100">{{ getRecordProgression() }} %</div>
+                </div>
             </div>
+
         </div>
 
         <!-- ERROR MODAL -->
