@@ -346,6 +346,7 @@ function OfflineStreamProcessor(config) {
         getPeriodForStreamInfo: getPeriodForStreamInfo,
         getStreamProcessor: getStreamProcessor,
         start: start,
+        stop: stop,
         timeIsBuffered: timeIsBuffered
     };
 

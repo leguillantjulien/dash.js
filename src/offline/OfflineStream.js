@@ -198,12 +198,19 @@ function OfflineStream(config) {
         return streamInfo;
     }
 
+    function stopOfflineStreamProcessors() {
+        for (let i = 0; i < offlineStreamProcessors.length; i++) {
+            offlineStreamProcessors[i].stop();
+        }
+    }
+
     instance = {
         initialize: initialize,
         setConfig: setConfig,
         offlineStreamProcessor: offlineStreamProcessor,
         getFragmentController: getFragmentController,
-        getStreamInfo: getStreamInfo
+        getStreamInfo: getStreamInfo,
+        stopOfflineStreamProcessors: stopOfflineStreamProcessors
     };
 
     setup();

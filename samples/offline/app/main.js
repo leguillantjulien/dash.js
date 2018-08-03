@@ -475,6 +475,10 @@ app.controller('DashController', function ($scope, sources, contributors, dashif
         $scope.player.record($scope.selectedItem.url);
     }
 
+    $scope.doStopDownload = function () {
+        $scope.player.stopRecord();
+    }
+
     $scope.changeTrackSwitchMode = function (mode, type) {
         $scope.player.setTrackSwitchModeFor(type, mode);
     };
@@ -817,4 +821,8 @@ function legendLabelClickHandler(obj) { /* jshint ignore:line */
     target.selected = !target.selected;
     scope.enableChartByName(id[1], id[0]);
     scope.safeApply();
+}
+
+function getOfflineManifests() {
+
 }

@@ -95,6 +95,7 @@ function MediaPlayer() {
         source,
         protectionData,
         mediaPlayerInitialized,
+        offlineControllerInitialized,
         streamingInitialized,
         playbackInitialized,
         autoPlay,
@@ -129,6 +130,7 @@ function MediaPlayer() {
     function setup() {
         logger = debug.getLogger(instance);
         mediaPlayerInitialized = false;
+        offlineControllerInitialized = false;
         playbackInitialized = false;
         streamingInitialized = false;
         autoPlay = true;
@@ -1905,9 +1907,25 @@ function MediaPlayer() {
         return mediaPlayerModel.getManifestUpdateRetryInterval();
     }
 
+    /*
+    ---------------------------------------------------------------------------
+
+        OFFLINE
+
+    ---------------------------------------------------------------------------
+    */
+
     function record(manifestURL) {
-        createRecordControllers();
+        if (!offlineControllerInitialized) {
+            createRecordControllers();
+        }
         offlineController.load(manifestURL);
+    }
+
+    function stopRecord() {
+        if (offlineControllerInitialized) {
+            offlineController.stopRecord();
+        }
     }
 
     function createRecordControllers() {
@@ -1959,6 +1977,7 @@ function MediaPlayer() {
             timelineConverter: timelineConverter,
             abrController: abrController
         });
+        offlineControllerInitialized = true;
     }
 
     /*
@@ -3100,6 +3119,7 @@ function MediaPlayer() {
         getThumbnail: getThumbnail,
         record: record,
         keepProtectionMediaKeys: keepProtectionMediaKeys,
+        stopRecord: stopRecord,
         reset: reset
     };
 

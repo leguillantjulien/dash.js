@@ -56,7 +56,7 @@ function OfflineController(config) {
         offlineStoreController,
         timelineConverter,
         errHandler,
-        stream,
+        streams,
         manifest,
         isStorageInit,
         logger;
@@ -71,6 +71,7 @@ function OfflineController(config) {
         eventBus.on(Events.ORIGINAL_MANIFEST_LOADED, generateOfflineManifest, instance);
         eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
         isStorageInit = false;
+        streams = [];
     }
 
 
@@ -160,7 +161,7 @@ function OfflineController(config) {
             }
             for (let i = 0, ln = streamsInfo.length; i < ln; i++) {
                 const streamInfo = streamsInfo[i];
-                stream = OfflineStream(context).create();
+                let stream = OfflineStream(context).create();
                 stream.setConfig({
                     manifestUpdater: manifestUpdater,
                     dashManifestModel: dashManifestModel,
@@ -173,6 +174,7 @@ function OfflineController(config) {
                     metricsModel: metricsModel
                 });
                 stream.initialize(streamInfo);
+                streams.push(stream);
             }
             eventBus.trigger(Events.STREAMS_COMPOSED);
         } catch (e) {
@@ -229,11 +231,18 @@ function OfflineController(config) {
         }
     }
 
+    function stopRecord() {
+        for (let i = 0, ln = streams.length; i < ln; i++) {
+            streams[i].stopOfflineStreamProcessors();
+        }
+    }
+
     instance = {
         load: load,
         onManifestUpdated: onManifestUpdated,
         setConfig: setConfig,
-        composeStreams: composeStreams
+        composeStreams: composeStreams,
+        stopRecord: stopRecord
     };
 
     setup();
