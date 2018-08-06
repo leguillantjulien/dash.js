@@ -74,24 +74,47 @@ function IndexDBStore() {
     }
 
     function getManifestByKey(key) {
-        return manifestStore.getItem('manifest').then(function (value) {
+        return manifestStore.getItem('manifest').then(function (manifestsArray) {
+            let manifests,
+                item,
+                response;
 
-            if (value.length) {
-                value[key - 1].manifest = entities.decode(value[key - 1].manifest);
-                //console.log('value[key] ' + JSON.stringify(value[key - 1]));
-                return Promise.resolve(value[key - 1]);
+            manifests = manifestsArray.manifests;
+            if (manifests.length) {
+                item = manifests[key - 1];
+                if (item !== null) {
+                    response = {
+                        'manifest': entities.decode(item.manifest.manifest),
+                        'url': item.manifest.url,
+                        'originalURL': item.manifest.originalURL,
+                        'fragmentStore': item.manifest.fragmentStore
+                    };
+
+                    return Promise.resolve(response);
+                } else {
+                    return Promise.reject('Cannot found manifest with this key !');
+                }
             } else {
-                return Promise.reject('Cannot found manifest with this key !');
+                return Promise.reject('Any manifests stored in DB !');
             }
+        }).catch(function (err) {
+            console.log('err => ' + err);
+            return Promise.reject(err);
+        });
+    }
+
+    function getAllManifests() {
+        return manifestStore.getItem('manifest').then(function (array) {
+            return Promise.resolve(array);
         }).catch(function (err) {
             return Promise.reject(err);
         });
     }
 
     function countManifest() {
-        return manifestStore.getItem('manifest').then(function (value) {
-            if (value) {
-                return Promise.resolve(value.length);
+        return manifestStore.getItem('manifest').then(function (manifestsArray) {
+            if (manifestsArray && manifestsArray.manifests) {
+                return Promise.resolve(manifestsArray.manifests.length);
             } else {
                 return Promise.resolve(0);
             }
@@ -102,8 +125,8 @@ function IndexDBStore() {
 
     function storeManifest(manifest) {
         manifestStore.getItem('manifest').then(function (results) {
-            let manifestsArray = results ? results : [];
-            manifestsArray.push(manifest);
+            let manifestsArray = results ? results : {'manifests': [] };
+            manifestsArray.manifests.push({['manifest']: manifest} );
             manifestStore.setItem('manifest',manifestsArray);
         });
     }
@@ -135,7 +158,8 @@ function IndexDBStore() {
         storeFragment: storeFragment,
         storeManifest: storeManifest,
         setFragmentStore: setFragmentStore,
-        countManifest: countManifest
+        countManifest: countManifest,
+        getAllManifests: getAllManifests
     };
     setup();
     return instance;

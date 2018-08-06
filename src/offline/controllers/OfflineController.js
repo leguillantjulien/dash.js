@@ -38,10 +38,10 @@ import OfflineStoreController from './OfflineStoreController';
 import OfflineStream from '../OfflineStream';
 import OfflineIndexDBManifestParser from '../utils/OfflineIndexDBManifestParser';
 import URLUtils from './../../streaming/utils/URLUtils';
+import MediaPlayerEvents from './../../streaming/MediaPlayerEvents';
 
-function OfflineController(config) {
+function OfflineController() {
 
-    config = config || {};
     const context = this.context;
 
     let instance,
@@ -65,11 +65,17 @@ function OfflineController(config) {
     const urlUtils = URLUtils(context).getInstance();
 
     function setup() {
+        manifestUpdater = ManifestUpdater(context).create();
+        offlineStoreController = OfflineStoreController(context).getInstance();
+        baseURLController = BaseURLController(context).getInstance();
         logger = Debug(context).getInstance().getLogger(instance);
+
+        Events.extend(MediaPlayerEvents);
         eventBus.on(Events.FRAGMENT_LOADING_COMPLETED, storeFragment, instance);
         eventBus.on(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, instance);
         eventBus.on(Events.ORIGINAL_MANIFEST_LOADED, generateOfflineManifest, instance);
         eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
+
         isStorageInit = false;
         streams = [];
     }
@@ -119,10 +125,6 @@ function OfflineController(config) {
             timelineConverter = config.timelineConverter;
         }
 
-        manifestUpdater = ManifestUpdater(context).create();
-        offlineStoreController = OfflineStoreController(context).getInstance();
-        baseURLController = BaseURLController(context).getInstance();
-
         manifestUpdater.setConfig({
             manifestModel: manifestModel,
             dashManifestModel: dashManifestModel,
@@ -137,6 +139,7 @@ function OfflineController(config) {
     }
 
     function load(url) {
+        console.log('load : ' + url);
         manifestLoader.load(url);
     }
 
@@ -218,6 +221,8 @@ function OfflineController(config) {
                         let manifestId = keys + 1;
                         let offlineManifest = {
                             'fragmentStore': 'manifest_' + manifestId,
+                            'manifestId': manifestId,
+                            'url': 'offline_indexdb://' + manifestId,
                             'originalURL': manifest.url,
                             'manifest': parsedManifest
                         };
@@ -245,13 +250,20 @@ function OfflineController(config) {
         return Math.round(globalProgression * 100);
     }
 
+    function getAllManifests() {
+        return offlineStoreController.getAllManifests().then(function (array) {
+            return Promise.resolve(array);
+        });
+    }
+
     instance = {
         load: load,
         onManifestUpdated: onManifestUpdated,
         setConfig: setConfig,
         composeStreams: composeStreams,
         stopRecord: stopRecord,
-        getRecordProgression: getRecordProgression
+        getRecordProgression: getRecordProgression,
+        getAllManifests: getAllManifests
     };
 
     setup();
@@ -260,4 +272,4 @@ function OfflineController(config) {
 }
 
 OfflineController.__dashjs_factory_name = 'OfflineController';
-export default FactoryMaker.getSingletonFactory(OfflineController);
+export default FactoryMaker.getClassFactory(OfflineController);
