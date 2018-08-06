@@ -40,25 +40,12 @@
     <div class="modal fade" id="streamModal">
         <div class="modal-dialog">
             <div class="list-group modal-list">
-              <ul>
-                  <li ng-repeat="item in availableStreams" ng-class="{'sub':item.submenu}">
-                    <span ng-show="!item.submenu" ng-click="setStream(item)">{{item.name}}</span>
-                    <span ng-show="item.submenu">{{item.name}}</span>
-                    <ul ng-show="item.submenu">
-                        <li ng-repeat="subitem in item.submenu">
-                            <span ng-click="setStream(subitem)" ng-if="subitem.url"
-                                  data-dismiss="modal">{{subitem.name}}</span>
-                            <span ng-if="!subitem.url">{{subitem.name}}</span>
-                            <ul ng-if="subitem.submenu">
-                                <li ng-repeat="subsubitem in subitem.submenu">
-                                    <span ng-click="setStream(subsubitem)"
-                                        data-dismiss="modal">{{subsubitem.name}}</span>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
-                  </li>
-              </ul>
+                <ul>
+                    <span>Offline Manifests</span>
+                    <li ng-repeat="item in availableStreams">
+                        <span  ng-show="item.manifest" ng-click="setStream(item.manifest)">{{item.manifest.fragmentStore}} : {{item.manifest.originalURL}}</span>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
@@ -83,21 +70,11 @@
                         Stored Stream <span class="caret"></span>
                     </button>
                     <ul class="dropdown-menu multi-level" role="menu" aria-labelledby="dropdownMenu">
-                        <li class="dropdown-submenu" ng-if="item.submenu" ng-repeat="item in availableStreams" ng-mouseover="onStreamItemHover(item)">
-                            <a tabindex="-1" href="#">{{item.name}}</a>
+                        <li class="dropdown-submenu" ng-if="availableStreams">
+                            <a tabindex="-1" href="#">Offline Manifests</a>
                             <ul class="dropdown-menu">
-                                <li class="dropdown-submenu" ng-repeat="subitem in item.submenu" ng-if="subitem.submenu">
-                                    <a tabindex="-1" href="#">{{subitem.name}}</a>
-                                    <ul class="dropdown-menu">
-                                        <li ng-repeat="subsubitem in subitem.submenu">
-                                            <a title="{{ subsubitem.moreInfo && 'See ' + subsubitem.moreInfo + ' for more information' || undefined }}"
-                                               ng-click="setStream(subsubitem)">{{subsubitem.name}}</a>
-                                        </li>
-                                    </ul>
-                                </li>
-                                <li ng-repeat="subitem in item.submenu" ng-if="subitem.url">
-                                    <a title="{{ subitem.moreInfo && 'See ' + subitem.moreInfo + ' for more information' || undefined }}"
-                                       ng-click="setStream(subitem)">{{subitem.name}}</a>
+                                <li class="dropdown-submenu" ng-repeat="item in availableStreams">
+                                    <a tabindex="-1" href="#" ng-click="setStream(item.manifest) ">{{item.manifest.fragmentStore}} : {{item.manifest.originalURL}}</a>
                                 </li>
                             </ul>
                         </li>

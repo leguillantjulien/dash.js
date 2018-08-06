@@ -1970,7 +1970,7 @@ function MediaPlayer() {
         });
 
         if (!offlineController) {
-            offlineController = OfflineController(context).getInstance();
+            offlineController = OfflineController(context).create();
         }
 
         offlineController.setConfig({

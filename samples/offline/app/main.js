@@ -33,34 +33,34 @@ angular.module('DashIFTestVectorsService', ['ngResource']).factory('dashifTestVe
     });
 });
 
-app.controller('DashController', function ($scope, $timeout, sources, contributors, dashifTestVectors) {
+app.factory('offlineController', function ($q) {
+    let offlineController = dashjs.OfflineController().create();
+
+    let getAllManifests = function() {
+        let deferred = $q.defer();
+
+        offlineController.getAllManifests().then(function (items) {
+            deferred.resolve(items);
+        });
+
+        return deferred.promise;
+      };
+
+      return {
+        getAllManifests: getAllManifests
+      };
+});
+
+
+app.controller('DashController', function ($scope, $timeout, sources, contributors, dashifTestVectors, offlineController) {
     $scope.selectedItem = {
         url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd'
     };
 
-    sources.query(function (data) {
-        $scope.availableStreams = data.items;
-        // if no mss package, remove mss samples.
-        var MssHandler = dashjs.MssHandler; /* jshint ignore:line */
-        if (typeof MssHandler !== 'function') {
-            for (var i = $scope.availableStreams.length - 1; i >= 0; i--) {
-                if ($scope.availableStreams[i].name === 'Smooth Streaming') {
-                    $scope.availableStreams.splice(i, 1);
-                }
-            }
+    offlineController.getAllManifests().then(function (items) {
+        if (items) {
+            $scope.availableStreams = items.manifests;
         }
-
-        // DASH Industry Forum Test Vectors
-        dashifTestVectors.query(function(data) {
-            $scope.availableStreams.splice(7, 0, {
-                name: 'DASH Industry Forum Test Vectors',
-                submenu: data.items
-            });
-        });
-    });
-
-    contributors.query(function (data) {
-        $scope.contributors = data.items;
     });
 
     $scope.chartOptions = {
@@ -838,8 +838,4 @@ function legendLabelClickHandler(obj) { /* jshint ignore:line */
     target.selected = !target.selected;
     scope.enableChartByName(id[1], id[0]);
     scope.safeApply();
-}
-
-function getOfflineManifests() {
-
 }
