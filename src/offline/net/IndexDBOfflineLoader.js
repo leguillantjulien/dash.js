@@ -66,9 +66,9 @@ function IndexDBOfflineLoader() {
             else if (config.request.mediaType === Constants.STREAM) {
                 let key = urlUtils.removeHostname(config.request.url);
                 if (key % 1 === 0) {
-                    indexDBStore.getManifestByKey(key).then(function (manifest) {
-                        indexDBStore.setFragmentStore(manifest.fragmentStore);
-                        config.success(manifest.manifest, null, config.request.url, Constants.XML);
+                    indexDBStore.getManifestByKey(key).then(function (item) {
+                        indexDBStore.setFragmentStore(item.fragmentStore);
+                        config.success(item.manifest, null, config.request.url, Constants.XML);
                     }).catch(function (err) {
                         config.error(err);
                     });
