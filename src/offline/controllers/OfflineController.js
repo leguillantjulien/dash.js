@@ -66,7 +66,7 @@ function OfflineController() {
 
     function setup() {
         manifestUpdater = ManifestUpdater(context).create();
-        offlineStoreController = OfflineStoreController(context).getInstance();
+        offlineStoreController = OfflineStoreController(context).create();
         baseURLController = BaseURLController(context).getInstance();
         logger = Debug(context).getInstance().getLogger(instance);
 
@@ -139,7 +139,6 @@ function OfflineController() {
     }
 
     function load(url) {
-        console.log('load : ' + url);
         manifestLoader.load(url);
     }
 
@@ -250,20 +249,13 @@ function OfflineController() {
         return Math.round(globalProgression * 100);
     }
 
-    function getAllManifests() {
-        return offlineStoreController.getAllManifests().then(function (array) {
-            return Promise.resolve(array);
-        });
-    }
-
     instance = {
         load: load,
         onManifestUpdated: onManifestUpdated,
         setConfig: setConfig,
         composeStreams: composeStreams,
         stopRecord: stopRecord,
-        getRecordProgression: getRecordProgression,
-        getAllManifests: getAllManifests
+        getRecordProgression: getRecordProgression
     };
 
     setup();

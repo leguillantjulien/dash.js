@@ -35,14 +35,13 @@ import MetricsReporting from './src/streaming/metrics/MetricsReporting';
 import Protection from './src/streaming/protection/Protection';
 import MediaPlayerFactory from './src/streaming/MediaPlayerFactory';
 import Debug from './src/core/Debug';
-import OfflineController from './src/offline/controllers/OfflineController';
+import OfflineStoreController from './src/offline/controllers/OfflineStoreController';
 
 dashjs.Protection = Protection;
 dashjs.MetricsReporting = MetricsReporting;
 dashjs.MediaPlayerFactory = MediaPlayerFactory;
-dashjs.OfflineController = OfflineController;
-
+dashjs.OfflineStoreController = OfflineStoreController;
 dashjs.Debug = Debug;
 
 export default dashjs;
-export { MediaPlayer, OfflineController, Protection, MetricsReporting, MediaPlayerFactory, Debug};
+export { MediaPlayer, OfflineStoreController, Protection, MetricsReporting, MediaPlayerFactory, Debug};

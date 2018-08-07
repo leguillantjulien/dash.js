@@ -31,9 +31,8 @@
 import FactoryMaker from './../../core/FactoryMaker';
 import IndexDBStore from './../storage/IndexDBStore';
 
-function OfflineStoreController(config) {
+function OfflineStoreController() {
 
-    config = config || {};
     const context = this.context;
 
     let instance,
@@ -77,4 +76,4 @@ function OfflineStoreController(config) {
 }
 
 OfflineStoreController.__dashjs_factory_name = 'OfflineStoreController';
-export default FactoryMaker.getSingletonFactory(OfflineStoreController);
+export default FactoryMaker.getClassFactory(OfflineStoreController);

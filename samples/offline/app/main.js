@@ -33,13 +33,13 @@ angular.module('DashIFTestVectorsService', ['ngResource']).factory('dashifTestVe
     });
 });
 
-app.factory('offlineController', function ($q) {
-    let offlineController = dashjs.OfflineController().create();
+app.factory('offlineStoreController', function ($q) {
+    let offlineStoreController = dashjs.OfflineStoreController().create();
 
     let getAllManifests = function() {
         let deferred = $q.defer();
 
-        offlineController.getAllManifests().then(function (items) {
+        offlineStoreController.getAllManifests().then(function (items) {
             deferred.resolve(items);
         });
 
@@ -47,17 +47,17 @@ app.factory('offlineController', function ($q) {
       };
 
       return {
-        getAllManifests: getAllManifests
+          getAllManifests: getAllManifests
       };
 });
 
 
-app.controller('DashController', function ($scope, $timeout, sources, contributors, dashifTestVectors, offlineController) {
+app.controller('DashController', function ($scope, $timeout, sources, contributors, dashifTestVectors, offlineStoreController) {
     $scope.selectedItem = {
         url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd'
     };
 
-    offlineController.getAllManifests().then(function (items) {
+    offlineStoreController.getAllManifests().then(function (items) {
         if (items) {
             $scope.availableStreams = items.manifests;
         }
