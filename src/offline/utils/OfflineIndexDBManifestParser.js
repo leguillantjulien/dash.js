@@ -67,7 +67,7 @@ function OfflineIndexDBManifestParser() {
             }
         }
         //TODO : remove promise timeOut
-        return wait(2000).then(function () {
+        return wait(1000).then(function () {
             return encodeManifest(DOM);
         });
     }
@@ -103,11 +103,7 @@ function OfflineIndexDBManifestParser() {
                         representationId = getBestRepresentationId(adaptationsSet);
                         basesURL[i].innerHTML = representationId + '_' + fragmentId;
                     }
-                } else {
-                    throw new Error('Any AdaptationSet Parent ! ');
                 }
-            } else {
-                throw new Error('Any Representation Parent ! ');
             }
             //logger.debug('AFTER innerHTML ==> ' + basesURL[i].innerHTML);
         }
