@@ -43,7 +43,8 @@
                 <ul>
                     <span>Offline Manifests</span>
                     <li ng-repeat="item in availableStreams">
-                        <span  ng-show="item.manifest" ng-click="setStream(item.manifest)">{{item.manifest.fragmentStore}} : {{item.manifest.originalURL}}</span>
+                        <span ng-show="item.manifest" ng-click="setStream(item.manifest)">{{item.manifest.fragmentStore}} : {{item.manifest.originalURL}}</span>
+                        <span class="btn btn-danger btn-sm" ng-click="deleteStream(item.manifest.manifestId);$event.stopPropagation();">Delete</span>
                     </li>
                 </ul>
             </div>
@@ -66,7 +67,7 @@
         <div class="row">
             <div class="input-group">
                 <div id="desktop-streams" class="input-group-btn">
-                    <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+                    <button ng-click="refreshAvailableStreams();" type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
                         Stored Stream <span class="caret"></span>
                     </button>
                     <ul class="dropdown-menu multi-level" role="menu" aria-labelledby="dropdownMenu">
@@ -74,8 +75,12 @@
                             <a tabindex="-1" href="#">Offline Manifests</a>
                             <ul class="dropdown-menu">
                                 <li class="dropdown-submenu" ng-repeat="item in availableStreams">
-                                    <a tabindex="-1" href="#" ng-click="setStream(item.manifest) ">{{item.manifest.fragmentStore}} : {{item.manifest.originalURL}}</a>
+                                    <a tabindex="-1" href="#" ng-click="setStream(item.manifest)">
+                                        {{item.manifest.fragmentStore}} : {{item.manifest.originalURL}}
+                                        <span class="btn btn-danger btn-sm" ng-click="deleteStream(item.manifest.manifestId); $event.stopPropagation();">Delete</span>
+                                    </a>
                                 </li>
+
                             </ul>
                         </li>
                     </ul>
@@ -286,6 +291,7 @@
                 <div class="list-group">
                     <a href="#" class="list-group-item list-group-item-action active" ng-click="doDownload()">Download</a>
                     <a href="#" class="list-group-item list-group-item-action" ng-click="doStopDownload()">Stop Download</a>
+                    <a href="#" class="list-group-item list-group-item-action" ng-click="doResumeDownload()">Resume Download</a>
                 </div>
                 <div class="progress">
                     <!--TODO : Add multibar for each content type -->

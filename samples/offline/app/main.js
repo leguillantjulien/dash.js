@@ -33,35 +33,10 @@ angular.module('DashIFTestVectorsService', ['ngResource']).factory('dashifTestVe
     });
 });
 
-app.factory('offlineStoreController', function ($q) {
-    let offlineStoreController = dashjs.OfflineStoreController().create();
-
-    let getAllManifests = function() {
-        let deferred = $q.defer();
-
-        offlineStoreController.getAllManifests().then(function (items) {
-            deferred.resolve(items);
-        });
-
-        return deferred.promise;
-      };
-
-      return {
-          getAllManifests: getAllManifests
-      };
-});
-
-
-app.controller('DashController', function ($scope, $timeout, sources, contributors, dashifTestVectors, offlineStoreController) {
+app.controller('DashController', function ($scope, $timeout, $q, sources, contributors, dashifTestVectors) {
     $scope.selectedItem = {
         url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd'
     };
-
-    offlineStoreController.getAllManifests().then(function (items) {
-        if (items) {
-            $scope.availableStreams = items.manifests;
-        }
-    });
 
     $scope.chartOptions = {
         legend: {
@@ -467,33 +442,10 @@ app.controller('DashController', function ($scope, $timeout, sources, contributo
         $scope.controlbar.enable();
     };
 
-    $scope.doDownload = function () {
-        $scope.initSession();
-        $scope.player.record($scope.selectedItem.url);
-        $scope.updateRecordProgression();
-    }
-
     $scope.doStop = function () {
         $scope.player.attachSource(null);
         $scope.controlbar.reset();
         stopMetricsInterval();
-    }
-
-    $scope.updateRecordProgression = function () {
-        progressTimer = $timeout(function () {
-            $scope.recordProgression = $scope.player.getRecordProgression();
-            $scope.updateRecordProgression();
-        }, 200);
-    }
-
-    $scope.getRecordProgression = function () {
-        return $scope.recordProgression;
-    }
-
-    $scope.doStopDownload = function () {
-        $scope.player.stopRecord();
-        $timeout.cancel(progressTimer);
-        progressTimer = null;
     }
 
     $scope.changeTrackSwitchMode = function (mode, type) {
@@ -504,27 +456,27 @@ app.controller('DashController', function ($scope, $timeout, sources, contributo
         var level = $("input[name='log-level']:checked").val();
         switch(level) {
             case 'none':
-            $scope.player.getDebug().setLogLevel(dashjs.Debug.LOG_LEVEL_NONE);
-            break;
+                $scope.player.getDebug().setLogLevel(dashjs.Debug.LOG_LEVEL_NONE);
+                break;
 
             case 'fatal':
-            $scope.player.getDebug().setLogLevel(dashjs.Debug.LOG_LEVEL_FATAL);
-            break;
+                $scope.player.getDebug().setLogLevel(dashjs.Debug.LOG_LEVEL_FATAL);
+                break;
 
             case 'error':
-            $scope.player.getDebug().setLogLevel(dashjs.Debug.LOG_LEVEL_ERROR);
-            break;
+                $scope.player.getDebug().setLogLevel(dashjs.Debug.LOG_LEVEL_ERROR);
+                break;
 
             case 'warning':
-            $scope.player.getDebug().setLogLevel(dashjs.Debug.LOG_LEVEL_WARNING);
-            break;
+                $scope.player.getDebug().setLogLevel(dashjs.Debug.LOG_LEVEL_WARNING);
+                break;
 
             case 'info':
-            $scope.player.getDebug().setLogLevel(dashjs.Debug.LOG_LEVEL_INFO);
-            break;
+                $scope.player.getDebug().setLogLevel(dashjs.Debug.LOG_LEVEL_INFO);
+                break;
 
             default:
-            $scope.player.getDebug().setLogLevel(dashjs.Debug.LOG_LEVEL_DEBUG);
+                $scope.player.getDebug().setLogLevel(dashjs.Debug.LOG_LEVEL_DEBUG);
         }
 
     }
@@ -829,6 +781,89 @@ app.controller('DashController', function ($scope, $timeout, sources, contributo
             }
         }
     })();
+
+    ////////////////////////////////////////
+    //
+    // Offline
+    //
+    ////////////////////////////////////////
+    $(".progress").hide();
+
+    $scope.doDownload = function () {
+        $scope.player.record($scope.selectedItem.url);
+        $(".progress").show();
+        $scope.updateRecordProgression();
+    }
+
+    $scope.doStopDownload = function () {
+        $scope.player.stopRecord();
+        $timeout.cancel(progressTimer);
+        progressTimer = null;
+    }
+
+    $scope.doResumeDownload = function () {
+        $scope.player.resumeRecord();
+        $scope.updateRecordProgression();
+    }
+
+    $scope.updateRecordProgression = function () {
+        progressTimer = $timeout(function () {
+            $scope.recordProgression = $scope.player.getRecordProgression();
+            $scope.updateRecordProgression();
+        }, 200);
+    }
+
+    $scope.getRecordProgression = function () {
+        return $scope.recordProgression;
+    }
+
+    $scope.refreshAvailableStreams = function () {
+        setAvailableRecords();
+    }
+
+    ///////////////////////////////////////////
+    //
+    // Async calls
+    //
+    ////////////////////////////////////////
+
+    let getAllRecords = function() {
+        let deferred = $q.defer();
+
+        $scope.player.getAllRecords().then(function (items) {
+            deferred.resolve(items);
+        });
+
+        return deferred.promise;
+    };
+
+    let deleteRecord = function(manifestId) {
+        let deferred = $q.defer();
+
+        $scope.player.deleteRecord(manifestId).then(function (success) {
+            deferred.resolve(success);
+        });
+
+        return deferred.promise;
+    };
+
+    setAvailableRecords();
+    ////Init stored streals
+    function setAvailableRecords() {
+        getAllRecords().then(function (items) {
+            if (items) {
+                $scope.availableStreams = items.manifests;
+            }
+        });
+    }
+
+    $scope.deleteStream = function (manifestId) {
+        deleteRecord(manifestId).then(function (success) {
+            setAvailableRecords();
+        }).catch(function (err) {
+            console.log(err);
+        });
+    };
 });
 
 function legendLabelClickHandler(obj) { /* jshint ignore:line */
