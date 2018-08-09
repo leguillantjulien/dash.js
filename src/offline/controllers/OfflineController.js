@@ -68,6 +68,7 @@ function OfflineController() {
         baseURLController = BaseURLController(context).getInstance();
         logger = Debug(context).getInstance().getLogger(instance);
         streams = [];
+        isRecording = false;
     }
 
 
@@ -127,11 +128,16 @@ function OfflineController() {
         manifestUpdater.initialize();
     }
 
-    function load(url) {
+    function record(url) {
         eventBus.on(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, instance);
         eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
         eventBus.on(Events.ORIGINAL_MANIFEST_LOADED, onOriginalManifestLoaded, instance);
         manifestLoader.load(url);
+        isRecording = true;
+    }
+
+    function isRecording() {
+        return isRecording;
     }
 
     function onManifestUpdated(e) {
@@ -265,8 +271,30 @@ function OfflineController() {
         return Math.round(globalProgression * 100);
     }
 
+    function resetRecord() {
+        stopRecord();
+        for (let i = 0, ln = streams.length; i < ln; i++) {
+            streams[i].reset();
+        }
+        isRecording = false;
+        streams = [];
+        eventBus.off(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, instance);
+        eventBus.off(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
+        eventBus.off(Events.ORIGINAL_MANIFEST_LOADED, onOriginalManifestLoaded, instance);
+    }
+
+    function reset() {
+        logger.warn('reset');
+        if (isRecording()) {
+            resetRecord();
+        }
+        baseURLController.reset();
+        manifestUpdater.reset();
+        offlineStoreController = null;
+    }
+
     instance = {
-        load: load,
+        record: record,
         onManifestUpdated: onManifestUpdated,
         setConfig: setConfig,
         composeStreams: composeStreams,
@@ -274,7 +302,10 @@ function OfflineController() {
         resumeRecord: resumeRecord,
         deleteRecord: deleteRecord,
         getRecordProgression: getRecordProgression,
-        getAllRecords: getAllRecords
+        getAllRecords: getAllRecords,
+        isRecording: isRecording,
+        reset: reset,
+        resetRecord: resetRecord
     };
 
     setup();

@@ -202,6 +202,14 @@ function OfflineStream(config) {
         return streamInfo;
     }
 
+    function getStartTime() {
+        return streamInfo ? streamInfo.start : NaN;
+    }
+
+    function getDuration() {
+        return streamInfo ? streamInfo.duration : NaN;
+    }
+
     function stopOfflineStreamProcessors() {
         for (let i = 0; i < offlineStreamProcessors.length; i++) {
             offlineStreamProcessors[i].stop();
@@ -224,14 +232,43 @@ function OfflineStream(config) {
     }
 
     function setAvailableSegments() {
-        console.log('offlineStreamProcessors.length ' + offlineStreamProcessors.length);
+        //TODO compter par taille de segments et non par le nombre
         for (let i = 0; i < offlineStreamProcessors.length; i++) {
             console.log(offlineStreamProcessors[i].getAvailableSegmentsNumber());
-            availableSegments = availableSegments +  offlineStreamProcessors[i].getAvailableSegmentsNumber();
+            if (offlineStreamProcessors[i].getAvailableSegmentsNumber()) {
+                availableSegments = availableSegments +  offlineStreamProcessors[i].getAvailableSegmentsNumber();
+            } else {    //format différent
+                availableSegments = 0;
+            }
         }
     }
     function getAvailableSegments() {
         return availableSegments;
+    }
+
+     /**
+     * Partially resets some of the Stream elements
+     * @memberof OfflienStream#
+     */
+    function deactivate() {
+        let ln = offlineStreamProcessors ? offlineStreamProcessors.length : 0;
+        for (let i = 0; i < ln; i++) {
+            let fragmentModel = offlineStreamProcessors[i].getFragmentModel();
+            fragmentModel.removeExecutedRequestsBeforeTime(getStartTime() + getDuration());
+            offlineStreamProcessors[i].reset();
+        }
+    }
+
+    function reset() {
+
+        if (fragmentController) {
+            fragmentController.reset();
+            fragmentController = null;
+        }
+        deactivate();
+        resetInitialSettings();
+
+        eventBus.off(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, this);
     }
 
     instance = {
@@ -244,7 +281,8 @@ function OfflineStream(config) {
         resumeOfflineStreamProcessors: resumeOfflineStreamProcessors,
         getRecordProgression: getRecordProgression,
         getAvailableSegments: getAvailableSegments,
-        setAvailableSegments: setAvailableSegments
+        setAvailableSegments: setAvailableSegments,
+        reset: reset
     };
 
     setup();

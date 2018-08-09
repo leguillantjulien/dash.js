@@ -117,9 +117,7 @@ function OfflineStreamProcessor() {
     }
 
     function setup() {
-        isInitialized = false;
-        maxQuality = null;
-        downloadedSegments = -1;
+        resetInitialSettings();
         logger = Debug(context).getInstance().getLogger(instance);
         eventBus = EventBus(context).getInstance();
         eventBus.on(Events.STREAM_COMPLETED, onStreamCompleted, instance);
@@ -345,6 +343,35 @@ function OfflineStreamProcessor() {
         return downloadedSegments;
     }
 
+    function resetInitialSettings() {
+        isInitialized = false;
+        maxQuality = null;
+        downloadedSegments = 0;
+        mimeType = null;
+        mediaInfo = null;
+        updating = false;
+        realAdaptation = null;
+        currentVoRepresentation = null;
+        downloadedSegments = null;
+        maxQuality = null;
+        representation = null;
+        type = null;
+        stream = null;
+    }
+
+    function reset() {
+        resetInitialSettings();
+        indexHandler.reset();
+        baseURLController.reset();
+        metricsModel.clearAllCurrentMetrics();
+        timelineConverter.reset();
+        abrController.unRegisterStreamType(type);
+
+        eventBus.off(Events.STREAM_COMPLETED, onStreamCompleted, instance);
+        eventBus.off(Events.REPRESENTATION_UPDATED, onRepresentationUpdated, instance);
+        eventBus.off(Events.FRAGMENT_LOADING_COMPLETED, onFragmentLoadingCompleted, instance);
+    }
+
     instance = {
         initialize: initialize,
         setConfig: setConfig,
@@ -366,7 +393,8 @@ function OfflineStreamProcessor() {
         resume: resume,
         timeIsBuffered: timeIsBuffered,
         getAvailableSegmentsNumber: getAvailableSegmentsNumber,
-        getDownloadedSegments: getDownloadedSegments
+        getDownloadedSegments: getDownloadedSegments,
+        reset: reset
     };
 
     setup();

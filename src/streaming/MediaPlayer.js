@@ -280,6 +280,10 @@ function MediaPlayer() {
             metricsReportingController.reset();
             metricsReportingController = null;
         }
+        if (offlineController) {
+            offlineController.reset();
+            offlineControllerInitialized = false;
+        }
     }
 
     /**
@@ -1916,17 +1920,17 @@ function MediaPlayer() {
         if (!offlineControllerInitialized) {
             createRecordControllers();
         }
-        offlineController.load(manifestURL);
+        offlineController.record(manifestURL);
     }
 
     function stopRecord() {
-        if (offlineControllerInitialized) {
+        if (offlineControllerInitialized && offlineController.isRecording()) {
             offlineController.stopRecord();
         }
     }
 
     function resumeRecord() {
-        if (offlineControllerInitialized) {
+        if (offlineControllerInitialized && offlineController.isRecording()) {
             offlineController.resumeRecord();
         }
     }
@@ -2974,6 +2978,9 @@ function MediaPlayer() {
     }
 
     function initializePlayback() {
+        if (offlineControllerInitialized && offlineController.isRecording()) {
+            offlineController.resetRecord();
+        }
         if (!streamingInitialized && source) {
             streamingInitialized = true;
             logger.info('Streaming Initialized');
