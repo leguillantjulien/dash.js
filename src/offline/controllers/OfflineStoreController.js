@@ -62,12 +62,21 @@ function OfflineStoreController() {
         return indexDBStore.getAllManifests();
     }
 
+    function deleteManifestById(manifestId) {
+        return indexDBStore.deleteManifestById(manifestId);
+    }
+
+    function isFragmentStoreInitialized() {
+        return indexDBStore.isFragmentStoreInitialized();
+    }
     instance = {
+        isFragmentStoreInitialized: isFragmentStoreInitialized,
         storeFragment: storeFragment,
         storeOfflineManifest: storeOfflineManifest,
         setFragmentStore: setFragmentStore,
         countManifest: countManifest,
-        getAllManifests: getAllManifests
+        getAllManifests: getAllManifests,
+        deleteManifestById: deleteManifestById
     };
 
     setup();

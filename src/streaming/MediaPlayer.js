@@ -172,9 +172,6 @@ function MediaPlayer() {
         if (config.mediaController) {
             mediaController = config.mediaController;
         }
-        if (config.offlineController) {
-            offlineController = config.offlineController;
-        }
     }
 
     /**
@@ -1928,6 +1925,27 @@ function MediaPlayer() {
         }
     }
 
+    function resumeRecord() {
+        if (offlineControllerInitialized) {
+            offlineController.resumeRecord();
+        }
+    }
+
+    function getAllRecords() {
+        if (!offlineControllerInitialized) {
+            createRecordControllers();
+        }
+        return offlineController.getAllRecords();
+    }
+
+    function deleteRecord(manifestId) {
+        if (!offlineControllerInitialized) {
+            createRecordControllers();
+        }
+        return offlineController.deleteRecord(manifestId);
+    }
+
+
     function getRecordProgression() {
         if (offlineControllerInitialized) {
             return offlineController.getRecordProgression();
@@ -3126,6 +3144,9 @@ function MediaPlayer() {
         record: record,
         keepProtectionMediaKeys: keepProtectionMediaKeys,
         stopRecord: stopRecord,
+        getAllRecords: getAllRecords,
+        deleteRecord: deleteRecord,
+        resumeRecord: resumeRecord,
         getRecordProgression: getRecordProgression,
         reset: reset
     };

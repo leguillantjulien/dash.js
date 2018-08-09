@@ -39,18 +39,32 @@ function IndexDBStore() {
     let instance,
         logger,
         manifestStore,
+        isFragmentStoreInit,
         fragmentStore;
-
-    manifestStore = localforage.createInstance({
-        driver: localforage.INDEXEDDB,
-        name: 'dash_offline_db',
-        version: 1.0,
-        storeName: 'manifest'
-    });
 
     function setup() {
         logger = Debug(context).getInstance().getLogger(instance);
+        fragmentStore = null;
+        isFragmentStoreInit = false;
+
+        localforage.config({
+            driver: localforage.INDEXEDDB,
+            name: 'dash_offline_db'
+        });
+
+        manifestStore = localforage.createInstance({
+            driver: localforage.INDEXEDDB,
+            name: 'dash_offline_db',
+            version: 1.0,
+            storeName: 'manifest'
+        });
     }
+
+    /////////////////////////////////////////
+    //
+    // GET/SET Methods
+    //
+    ////////////////////////////////////////
 
     function setFragmentStore(storeName) {
         console.log('setStore  ' + storeName);
@@ -59,6 +73,23 @@ function IndexDBStore() {
             name: 'dash_offline_db',
             version: 1.0,
             storeName: storeName
+        });
+        isFragmentStoreInit = true;
+    }
+
+    function isFragmentStoreInitialized() {
+        return isFragmentStoreInit;
+    }
+
+    function dropFragmentStore(storeName) {
+        localforage.dropInstance({
+            driver: localforage.INDEXEDDB,
+            name: 'dash_offline_db',
+            version: 1.0,
+            storeName: storeName
+        }).then(function () {
+            fragmentStore = null;
+            isFragmentStoreInit = false;
         });
         return;
     }
@@ -79,9 +110,15 @@ function IndexDBStore() {
                 item,
                 response;
 
-            manifests = manifestsArray.manifests;
-            if (manifests.length) {
-                item = manifests[key - 1];
+            if (manifestsArray && manifestsArray.manifests) {
+                manifests = manifestsArray.manifests;
+
+                for (let i = 0; i < manifests.length; i++) {
+                    if (manifests[i].manifest.manifestId === parseInt(key)) {
+                        item = manifests[i];
+                    }
+                }
+
                 if (item !== null) {
                     response = {
                         'manifest': entities.decode(item.manifest.manifest),
@@ -92,13 +129,12 @@ function IndexDBStore() {
 
                     return Promise.resolve(response);
                 } else {
-                    return Promise.reject('Cannot found manifest with this key !');
+                    return Promise.reject('Cannot found manifest with this manifestId !');
                 }
             } else {
                 return Promise.reject('Any manifests stored in DB !');
             }
         }).catch(function (err) {
-            console.log('err => ' + err);
             return Promise.reject(err);
         });
     }
@@ -113,10 +149,17 @@ function IndexDBStore() {
 
     function countManifest() {
         return manifestStore.getItem('manifest').then(function (manifestsArray) {
+            let higherManifestId = 0;
             if (manifestsArray && manifestsArray.manifests) {
-                return Promise.resolve(manifestsArray.manifests.length);
+                let manifests = manifestsArray.manifests;
+                for (let i = 0; i < manifests.length; i++) {
+                    if (manifests[i].manifest.manifestId > higherManifestId) {
+                        higherManifestId = manifests[i].manifest.manifestId;
+                    }
+                }
+                return Promise.resolve(higherManifestId);
             } else {
-                return Promise.resolve(0);
+                return Promise.resolve(higherManifestId);
             }
         }).catch(function (err) {
             return Promise.resolve(err);
@@ -132,15 +175,20 @@ function IndexDBStore() {
     }
 
     function storeFragment(fragmentId, fragmentData) {
-        let key = fragmentId;
-        let value = fragmentData;
-        return fragmentStore.setItem(key, value, function () {
-            return Promise.resolve(value);
-        }).catch(function (err) {
-            return Promise.reject(err);
-        });
-
+        if (isFragmentStoreInitialized()) {
+            return fragmentStore.setItem(fragmentId, fragmentData, function () {
+                return Promise.resolve();
+            }).catch(function (err) {
+                return Promise.reject(err);
+            });
+        } else return Promise.reject('FragmentStore Not Init');
     }
+
+    /////////////////////////////////////////
+    //
+    // DROP Methods
+    //
+    ////////////////////////////////////////
 
     function dropAll() {
         return localforage.clear().then(function () {
@@ -150,6 +198,50 @@ function IndexDBStore() {
         });
     }
 
+    function deleteManifestById(manifestId) {
+        return manifestStore.getItem('manifest').then(function (manifestsArray) {
+            if (manifestsArray && manifestsArray.manifests) {
+                return deleteManifestStore('manifest_' + manifestId).then(function () {
+                    let manifests = manifestsArray.manifests;
+
+                    for (let i = 0; i < manifests.length; i++) {
+                        if (manifests[i].manifest.manifestId === parseInt(manifestId)) {
+                            manifests.splice(i, 1);
+                        }
+                    }
+                    return manifestStore.setItem('manifest', manifestsArray).then(function () {
+                        return Promise.resolve('This stream has been successfull removed !');
+                    }).catch(function () {
+                        return Promise.reject('An error occured when trying to delete this manifest');
+                    });
+                });
+            } else {
+                return Promise.resolve('Nothing to delete !');
+            }
+        }).catch(function (err) {
+            return Promise.reject(err);
+        });
+    }
+
+    function deleteManifestStore(storeName) {
+        localforage.createInstance({
+            name: 'dash_offline_db',
+            storeName: storeName
+        });
+        return localforage.dropInstance({
+            name: 'dash_offline_db',
+            storeName: storeName
+        }).then(function () {
+            return Promise.resolve();
+        }).catch(function (err) {
+            console.log(err);
+            return Promise.reject(err);
+        });
+
+    }
+
+
+    setup();
 
     instance = {
         dropAll: dropAll,
@@ -159,9 +251,12 @@ function IndexDBStore() {
         storeManifest: storeManifest,
         setFragmentStore: setFragmentStore,
         countManifest: countManifest,
-        getAllManifests: getAllManifests
+        getAllManifests: getAllManifests,
+        dropFragmentStore: dropFragmentStore,
+        isFragmentStoreInitialized: isFragmentStoreInitialized,
+        deleteManifestById: deleteManifestById
     };
-    setup();
+
     return instance;
 }
 
