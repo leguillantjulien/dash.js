@@ -51,10 +51,11 @@ function URLLoader(cfg) {
         useFetch: cfg.mediaPlayerModel ? cfg.mediaPlayerModel.getLowLatencyEnabled() : null
     });
 
-    indexDBOfflineLoader = IndexDBOfflineLoader(context).create();
-
     function load(config) {
         if (urlUtils.isOfflineURL(config.request.url)) {
+            if (!indexDBOfflineLoader) {
+                indexDBOfflineLoader = IndexDBOfflineLoader(context).create();
+            }
             indexDBOfflineLoader.load(config);
         } else {
             httpLoader.load(config);
