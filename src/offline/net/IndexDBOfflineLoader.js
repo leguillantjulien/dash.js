@@ -52,9 +52,9 @@ function IndexDBOfflineLoader() {
                 config.request.mediaType === Constants.VIDEO    ||
                 config.request.mediaType === Constants.TEXT     ||
                 config.request.mediaType === Constants.MUXED    ||
+                config.request.mediaType === Constants.IMAGE    ||
                 config.request.mediaType === Constants.FRAGMENTED_TEXT  ||
-                config.request.mediaType === Constants.EMBEDDED_TEXT    ||
-                config.request.type === 'MediaSegment'
+                config.request.mediaType === Constants.EMBEDDED_TEXT
             ) {
                 let key = config.request.representationId + '_' + config.request.index;
                 indexDBStore.getFragmentByKey(key).then(function (fragment) {
@@ -67,11 +67,7 @@ function IndexDBOfflineLoader() {
                 let manifestId = urlUtils.removeHostname(config.request.url);
                 if (manifestId % 1 === 0) {
                     indexDBStore.getManifestByKey(manifestId).then(function (item) {
-                        console.log('Load Manifest OK');
                         indexDBStore.setFragmentStore(item.fragmentStore);
-                        if (!indexDBStore.isManifestStoreInitialized()) {
-                            indexDBStore.setManifestStore();
-                        }
                         config.success(item.manifest, null, config.request.url, Constants.XML);
                     }).catch(function (err) {
                         config.error(config.request.url,404, err);
