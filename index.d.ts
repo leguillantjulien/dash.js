@@ -239,21 +239,21 @@ declare namespace dashjs {
         getUseDeadTimeLatencyForAbr(): boolean;
         setUseDeadTimeLatencyForAbr(value: boolean): void;
         getCurrentLiveLatency(): number;
-        enableForcedTextStreaming(value: boolean): void;        
+        enableForcedTextStreaming(value: boolean): void;
         isTextEnabled(): boolean;
         getBufferTimeAtTopQualityLongForm(): number;
         setMovingAverageMethod(value: string): void;
         getMovingAverageMethod(): string;
         setABRStrategy(value: string): void;
         getABRStrategy(): string;
-        useDefaultABRRules(value: boolean): void;       
+        useDefaultABRRules(value: boolean): void;
         getAverageThroughput(value: number): void;
         setBufferAheadToKeep(value: number): void;
         getStableBufferTime(): number;
         getBufferTimeAtTopQuality(): number;
         setManifestLoaderRetryAttempts(value: number): void;
         setManifestLoaderRetryInterval(value: number): void;
-        setManifestUpdateRetryInterval(value: number): void;        
+        setManifestUpdateRetryInterval(value: number): void;
         getManifestUpdateRetryInterval(): number;
         setSegmentOverlapToleranceTime(value: number): void;
         keepProtectionMediaKeys(value: boolean): void;
@@ -390,7 +390,7 @@ declare namespace dashjs {
         type: MediaPlayerEvents['CAPTION_RENDERED'];
         captionDiv: HTMLDivElement;
         currentTrackIdx: number;
-
+    }
     export interface CaptionContainerResizeEvent extends Event {
         type: MediaPlayerEvents['CAPTION_CONTAINER_RESIZE'];
     }
