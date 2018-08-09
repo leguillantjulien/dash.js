@@ -38,7 +38,6 @@ import OfflineStoreController from './OfflineStoreController';
 import OfflineStream from '../OfflineStream';
 import OfflineIndexDBManifestParser from '../utils/OfflineIndexDBManifestParser';
 import URLUtils from './../../streaming/utils/URLUtils';
-import MediaPlayerEvents from './../../streaming/MediaPlayerEvents';
 
 function OfflineController() {
 
@@ -58,7 +57,6 @@ function OfflineController() {
         errHandler,
         streams,
         manifest,
-        isStorageInit,
         logger;
 
     const eventBus = EventBus(context).getInstance();
@@ -69,20 +67,11 @@ function OfflineController() {
         offlineStoreController = OfflineStoreController(context).create();
         baseURLController = BaseURLController(context).getInstance();
         logger = Debug(context).getInstance().getLogger(instance);
-
-        Events.extend(MediaPlayerEvents);
-        eventBus.on(Events.FRAGMENT_LOADING_COMPLETED, storeFragment, instance);
-        eventBus.on(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, instance);
-        eventBus.on(Events.ORIGINAL_MANIFEST_LOADED, generateOfflineManifest, instance);
-        eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
-
-        isStorageInit = false;
         streams = [];
     }
 
 
     function onManifestLoaded(e) {
-        console.log('onManifestLoaded');
         if (e.manifest !== null) {
             manifest = e.manifest;
         } else {
@@ -139,6 +128,9 @@ function OfflineController() {
     }
 
     function load(url) {
+        eventBus.on(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, instance);
+        eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
+        eventBus.on(Events.ORIGINAL_MANIFEST_LOADED, onOriginalManifestLoaded, instance);
         manifestLoader.load(url);
     }
 
@@ -187,9 +179,8 @@ function OfflineController() {
     function storeFragment(e) {
         if (e.request !== null) {
             let fragmentName = e.request.representationId + '_' + e.request.index;
-            if (!isStorageInit) {
+            if (!offlineStoreController.isFragmentStoreInitialized()) {
                 setFragmentStore().then(function () {
-                    isStorageInit = true;
                     offlineStoreController.storeFragment(fragmentName, e.response);
                 });
             } else {
@@ -202,7 +193,7 @@ function OfflineController() {
     function setFragmentStore() {
         return offlineStoreController.countManifest().then(function (count) {
             let storeName = 'manifest_' + (count + 1);
-            offlineStoreController.setFragmentStore(storeName);
+            return offlineStoreController.setFragmentStore(storeName);
         });
     }
 
@@ -210,34 +201,59 @@ function OfflineController() {
         offlineStoreController.storeOfflineManifest(encodedManifest);
     }
 
-    function generateOfflineManifest(e) {
+    function onOriginalManifestLoaded(e) {
         console.log('manifest.url => ' + manifest.url);
         if (!urlUtils.isOfflineURL(manifest.url)) {
-            let parser = OfflineIndexDBManifestParser(context).create();
-            offlineStoreController.countManifest().then(function (keys) {
-                parser.parse(e.originalManifest).then(function (parsedManifest) {
-                    if (parsedManifest !== null && keys !== null) {
-                        let manifestId = keys + 1;
-                        let offlineManifest = {
-                            'fragmentStore': 'manifest_' + manifestId,
-                            'manifestId': manifestId,
-                            'url': 'offline_indexdb://' + manifestId,
-                            'originalURL': manifest.url,
-                            'manifest': parsedManifest
-                        };
-                        storeOfflineManifest(offlineManifest);
-                    } else {
-                        throw new Error('falling parsing offline manifest');
-                    }
-                });
-            });
-
+            eventBus.on(Events.FRAGMENT_LOADING_COMPLETED, storeFragment, instance);
+            generateOfflineManifest(e.originalManifest);
         }
+    }
+
+    function generateOfflineManifest(originalManifest) {
+        offlineStoreController.countManifest().then(function (keys) {
+            let parser = OfflineIndexDBManifestParser(context).create();
+            parser.parse(originalManifest).then(function (parsedManifest) {
+                if (parsedManifest !== null && keys !== null) {
+                    let manifestId = keys + 1;
+                    let offlineManifest = {
+                        'fragmentStore': 'manifest_' + manifestId,
+                        'manifestId': manifestId,
+                        'url': 'offline_indexdb://' + manifestId,
+                        'originalURL': manifest.url,
+                        'manifest': parsedManifest
+                    };
+                    storeOfflineManifest(offlineManifest);
+                } else {
+                    throw new Error('falling parsing offline manifest');
+                }
+            });
+        });
+    }
+
+    function getAllRecords() {
+        return offlineStoreController.getAllManifests();
     }
 
     function stopRecord() {
         for (let i = 0, ln = streams.length; i < ln; i++) {
             streams[i].stopOfflineStreamProcessors();
+        }
+    }
+
+    function deleteRecord(manifestId) {
+        if (streams !== null) {
+            stopRecord();
+        }
+        return offlineStoreController.deleteManifestById(manifestId).then(function () {
+            return Promise.resolve();
+        }).catch(function (err) {
+            return Promise.reject(err);
+        });
+    }
+
+    function resumeRecord() {
+        for (let i = 0, ln = streams.length; i < ln; i++) {
+            streams[i].resumeOfflineStreamProcessors();
         }
     }
 
@@ -255,7 +271,10 @@ function OfflineController() {
         setConfig: setConfig,
         composeStreams: composeStreams,
         stopRecord: stopRecord,
-        getRecordProgression: getRecordProgression
+        resumeRecord: resumeRecord,
+        deleteRecord: deleteRecord,
+        getRecordProgression: getRecordProgression,
+        getAllRecords: getAllRecords
     };
 
     setup();

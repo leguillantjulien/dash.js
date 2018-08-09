@@ -36,9 +36,8 @@ import DashHandler from './../dash/DashHandler';
 import Constants from './../streaming/constants/Constants';
 import OfflineDownloaderRequestRule from './rules/OfflineDownloaderRequestRule';
 
-function OfflineStreamProcessor(config) {
+function OfflineStreamProcessor() {
 
-    config = config || {};
     let context = this.context;
 
     let instance,
@@ -163,6 +162,11 @@ function OfflineStreamProcessor(config) {
         isStopped = true;
     }
 
+    function resume() {
+        isStopped = false;
+        download();
+    }
+
     function initialize() {
 
         indexHandler = DashHandler(context).create({
@@ -249,7 +253,7 @@ function OfflineStreamProcessor(config) {
     }
     function start() {
         if (!currentVoRepresentation) {
-            throw new Error('Start denied to downloadManager');
+            throw new Error('Start denied to OfflineStreamProcessor');
         }
         isStopped = false;
         download();
@@ -359,6 +363,7 @@ function OfflineStreamProcessor(config) {
         getStreamProcessor: getStreamProcessor,
         start: start,
         stop: stop,
+        resume: resume,
         timeIsBuffered: timeIsBuffered,
         getAvailableSegmentsNumber: getAvailableSegmentsNumber,
         getDownloadedSegments: getDownloadedSegments

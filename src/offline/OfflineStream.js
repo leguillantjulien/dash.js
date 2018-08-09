@@ -208,6 +208,12 @@ function OfflineStream(config) {
         }
     }
 
+    function resumeOfflineStreamProcessors() {
+        for (let i = 0; i < offlineStreamProcessors.length; i++) {
+            offlineStreamProcessors[i].resume();
+        }
+    }
+
     function getRecordProgression() {
         let getDownloadedSegments = 0;
 
@@ -235,6 +241,7 @@ function OfflineStream(config) {
         getFragmentController: getFragmentController,
         getStreamInfo: getStreamInfo,
         stopOfflineStreamProcessors: stopOfflineStreamProcessors,
+        resumeOfflineStreamProcessors: resumeOfflineStreamProcessors,
         getRecordProgression: getRecordProgression,
         getAvailableSegments: getAvailableSegments,
         setAvailableSegments: setAvailableSegments
