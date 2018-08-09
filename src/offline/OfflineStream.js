@@ -246,10 +246,6 @@ function OfflineStream(config) {
         return availableSegments;
     }
 
-     /**
-     * Partially resets some of the Stream elements
-     * @memberof OfflienStream#
-     */
     function deactivate() {
         let ln = offlineStreamProcessors ? offlineStreamProcessors.length : 0;
         for (let i = 0; i < ln; i++) {

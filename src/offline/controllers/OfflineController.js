@@ -57,6 +57,7 @@ function OfflineController() {
         errHandler,
         streams,
         manifest,
+        isRecordingStatus,
         logger;
 
     const eventBus = EventBus(context).getInstance();
@@ -68,7 +69,7 @@ function OfflineController() {
         baseURLController = BaseURLController(context).getInstance();
         logger = Debug(context).getInstance().getLogger(instance);
         streams = [];
-        isRecording = false;
+        isRecordingStatus = false;
     }
 
 
@@ -133,11 +134,11 @@ function OfflineController() {
         eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
         eventBus.on(Events.ORIGINAL_MANIFEST_LOADED, onOriginalManifestLoaded, instance);
         manifestLoader.load(url);
-        isRecording = true;
+        isRecordingStatus = true;
     }
 
     function isRecording() {
-        return isRecording;
+        return isRecordingStatus;
     }
 
     function onManifestUpdated(e) {
@@ -276,7 +277,7 @@ function OfflineController() {
         for (let i = 0, ln = streams.length; i < ln; i++) {
             streams[i].reset();
         }
-        isRecording = false;
+        isRecordingStatus = false;
         streams = [];
         eventBus.off(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, instance);
         eventBus.off(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
