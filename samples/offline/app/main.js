@@ -814,7 +814,6 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
 
         if (allSelectedMediaInfos.length >= 1) {
             $scope.player.setSelectedMediaInfosForOfflineStream(JSON.parse(JSON.stringify(allSelectedMediaInfos)));
-            $scope.hideRepresentationModal();
         } else {
             alert('You must select at least 1 quality !');
         }
