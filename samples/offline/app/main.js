@@ -253,6 +253,11 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
         $scope.isDynamic = e.data.type === 'dynamic';
     }, $scope);
 
+    $scope.player.on(dashjs.MediaPlayer.events.AVAILABLE_BITRATES_LOADED, function (e) { /* jshint ignore:line */
+        $scope.availableBitrates = e.data;
+        $scope.showRepresentationModal();
+    }, $scope);
+
     $scope.player.on(dashjs.MediaPlayer.events.QUALITY_CHANGE_REQUESTED, function (e) { /* jshint ignore:line */
         $scope[e.mediaType + 'Index'] = e.oldQuality + 1;
         $scope[e.mediaType + 'PendingIndex'] = e.newQuality + 1;
@@ -788,6 +793,32 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
     //
     ////////////////////////////////////////
     $(".progress").hide();
+
+    $scope.showRepresentationModal = function () {
+        $('#representationModal').modal('show');
+    }
+    $scope.hideRepresentationModal = function () {
+        $('#representationModal').modal('hide');
+    }
+
+    $scope.validateForm = function () {
+        let allSelectedMediaInfos = [];
+        //based on contentType name
+        $('#video option:selected').val() !== undefined ? allSelectedMediaInfos.push($('#video option:selected').val()) : allSelectedMediaInfos;
+        $('#audio option:selected').val() !== undefined ? allSelectedMediaInfos.push($('#audio option:selected').val()) : allSelectedMediaInfos;
+        $('#mux option:selected').val() !== undefined ? allSelectedMediaInfos.push($('#mux option:selected').val()) : allSelectedMediaInfos;
+        $('#image option:selected').val() !== undefined ? allSelectedMediaInfos.push($('#image option:selected').val()) : allSelectedMediaInfos;
+        $('#embeddedText option:selected').val() !== undefined ? allSelectedMediaInfos.push($('#embeddedText option:selected').val()) : allSelectedMediaInfos;
+        $('#fragmentedText option:selected').val() !== undefined ? allSelectedMediaInfos.push($('#fragmentedText option:selected').val()) : allSelectedMediaInfos;
+        $('#text option:selected').val() !== undefined ? allSelectedMediaInfos.push($('#text option:selected').val()) : allSelectedMediaInfos;
+
+        if (allSelectedMediaInfos.length >= 1) {
+            $scope.player.setSelectedMediaInfosForOfflineStream(JSON.parse(JSON.stringify(allSelectedMediaInfos)));
+            $scope.hideRepresentationModal();
+        } else {
+            alert('You must select at least 1 quality !');
+        }
+    }
 
     $scope.doDownload = function () {
         $scope.player.record($scope.selectedItem.url);

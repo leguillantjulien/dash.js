@@ -2008,6 +2008,13 @@ function MediaPlayer() {
         offlineControllerInitialized = true;
     }
 
+    function setSelectedMediaInfosForOfflineStream(allSelectedMediaInfos) {
+        if (allSelectedMediaInfos) {
+            offlineController.setSelectedMediaInfosForOfflineStream(allSelectedMediaInfos);
+        }
+    }
+
+
     /*
     ---------------------------------------------------------------------------
 
@@ -3155,6 +3162,7 @@ function MediaPlayer() {
         deleteRecord: deleteRecord,
         resumeRecord: resumeRecord,
         getRecordProgression: getRecordProgression,
+        setSelectedMediaInfosForOfflineStream: setSelectedMediaInfosForOfflineStream,
         reset: reset
     };
 

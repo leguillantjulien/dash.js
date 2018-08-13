@@ -92,6 +92,7 @@ declare namespace dashjs {
         on(type: ManifestLoadedEvent['type'], listener: (e: ManifestLoadedEvent) => void, scope?: object): void;
         on(type: MetricEvent['type'], listener: (e: MetricEvent) => void, scope?: object): void;
         on(type: MetricChangedEvent['type'], listener: (e: MetricChangedEvent) => void, scope?: object): void;
+        on(type: OfflineStreamEvent['type'], listener: (e: OfflineStreamEvent) => void, scope?: object): void;
         on(type: PeriodSwitchEvent['type'], listener: (e: PeriodSwitchEvent) => void, scope?: object): void;
         on(type: PlaybackErrorEvent['type'], listener: (e: PlaybackErrorEvent) => void, scope?: object): void;
         on(type: PlaybackPausedEvent['type'], listener: (e: PlaybackPausedEvent) => void, scope?: object): void;
@@ -270,6 +271,7 @@ declare namespace dashjs {
     }
 
     interface MediaPlayerEvents {
+        AVAILABLE_BITRATES_LOADED: 'AvailableBitratesLoaded',
         AST_IN_FUTURE: 'astInFuture';
         BUFFER_EMPTY: 'bufferStalled';
         BUFFER_LEVEL_STATE_CHANGED: 'bufferStateChanged';
@@ -485,6 +487,12 @@ declare namespace dashjs {
     export interface MetricChangedEvent extends Event {
         type: MediaPlayerEvents['METRIC_CHANGED'];
         mediaType: 'video' | 'audio' | 'fragmentedText';
+    }
+
+    export interface OfflineStreamEvent extends Event {
+        type: MediaPlayerEvents['AVAILABLE_BITRATES_LOADED'];
+        data: object;
+        sender: object;
     }
 
     export interface PeriodSwitchEvent extends Event {
