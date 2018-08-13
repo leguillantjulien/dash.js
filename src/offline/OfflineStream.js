@@ -212,7 +212,7 @@ function OfflineStream(config) {
 
         if (!allMediaForType || allMediaForType.length === 0) {
             logger.info('No ' + type + ' data.');
-            return;
+            return null;
         }
 
         for (let i = 0, ln = allMediaForType.length; i < ln; i++) {
