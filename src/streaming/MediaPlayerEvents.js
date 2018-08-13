@@ -40,6 +40,13 @@ class MediaPlayerEvents extends EventsBase {
      */
     constructor() {
         super();
+
+        /**
+         * Triggered when all mediaInfo has been loaded on OfflineStream
+         * Return a list of available bitrateInfo needed to download stream.
+         */
+        this.AVAILABLE_BITRATES_LOADED = 'AvailableBitratesLoaded';
+
         /**
          * Triggered when playback will not start yet
          * as the MPD's availabilityStartTime is in the future.

@@ -61,10 +61,10 @@ function OfflineStreamProcessor() {
         downloadedSegments,
         metricsModel,
         isInitialized,
-        maxQuality,
         representation,
         isStopped,
-        stream;
+        stream,
+        qualityIndex;
 
     function setConfig(config) {
 
@@ -88,6 +88,10 @@ function OfflineStreamProcessor() {
 
         if (config.mimeType) {
             mimeType = config.mimeType;
+        }
+
+        if (config.qualityIndex) {
+            qualityIndex = config.qualityIndex;
         }
 
         if (config.timelineConverter) {
@@ -285,8 +289,9 @@ function OfflineStreamProcessor() {
 
     function updateRepresentation(newRealAdaptation, voAdaptation, type) {
         const streamInfo = getStreamInfo();
-        maxQuality = abrController.getTopQualityIndexFor(type, streamInfo.id);
-
+        if (qualityIndex === null) {
+            qualityIndex = abrController.getTopQualityIndexFor(type, streamInfo.id);
+        }
         updating = true;
 
         currentVoRepresentation = updateRepresentations(voAdaptation);
@@ -308,7 +313,7 @@ function OfflineStreamProcessor() {
     }
 
     function updateRepresentations(voAdaptation) {
-        return dashManifestModel.getRepresentationsForAdaptation(voAdaptation)[maxQuality];
+        return dashManifestModel.getRepresentationsForAdaptation(voAdaptation)[qualityIndex];
     }
 
     function getRepresentation() {
@@ -345,7 +350,7 @@ function OfflineStreamProcessor() {
 
     function resetInitialSettings() {
         isInitialized = false;
-        maxQuality = null;
+        qualityIndex = null;
         downloadedSegments = 0;
         mimeType = null;
         mediaInfo = null;
@@ -353,7 +358,6 @@ function OfflineStreamProcessor() {
         realAdaptation = null;
         currentVoRepresentation = null;
         downloadedSegments = null;
-        maxQuality = null;
         representation = null;
         type = null;
         stream = null;

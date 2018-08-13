@@ -58,11 +58,10 @@ function OfflineStream(config) {
         streamInfo,
         fragmentController,
         availableSegments,
+        allSelectedMediaBitrateList,
         logger;
 
     function setup() {
-        offlineStreamProcessors = [];
-        availableSegments = 0;
         logger = Debug(context).getInstance().getLogger(instance);
         resetInitialSettings();
         eventBus.on(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, this);
@@ -70,8 +69,11 @@ function OfflineStream(config) {
     }
 
     function resetInitialSettings() {
+        offlineStreamProcessors = [];
+        availableSegments = 0;
         streamInfo = null;
         offlineStreamProcessors = [];
+        allSelectedMediaBitrateList = [];
     }
 
     function setConfig(config) {
@@ -114,6 +116,48 @@ function OfflineStream(config) {
         baseURLController.setConfig({
             dashManifestModel: dashManifestModel
         });
+        initializeMediaBitrate(streamInfo);
+        setAvailableSegments();
+    }
+
+    function initializeMediaBitrate(streamInfo) {
+        let availableBitRateList = [];
+        if (getBitrateListForType(Constants.VIDEO, streamInfo) !== null) {
+            availableBitRateList.push(getBitrateListForType(Constants.VIDEO, streamInfo));
+        }
+        if (getBitrateListForType(Constants.AUDIO, streamInfo) !== null) {
+            availableBitRateList.push(getBitrateListForType(Constants.AUDIO, streamInfo));
+        }
+        if (getBitrateListForType(Constants.TEXT, streamInfo) !== null) {
+            availableBitRateList.push(getBitrateListForType(Constants.TEXT, streamInfo));
+        }
+        if (getBitrateListForType(Constants.FRAGMENTED_TEXT, streamInfo) !== null) {
+            availableBitRateList.push(getBitrateListForType(Constants.FRAGMENTED_TEXT, streamInfo));
+        }
+        if (getBitrateListForType(Constants.EMBEDDED_TEXT, streamInfo)) {
+            availableBitRateList.push(getBitrateListForType(Constants.EMBEDDED_TEXT, streamInfo));
+        }
+        if (getBitrateListForType(Constants.MUXED, streamInfo) !== null) {
+            availableBitRateList.push(getBitrateListForType(Constants.MUXED, streamInfo));
+        }
+        if (getBitrateListForType(Constants.IMAGE, streamInfo) !== null) {
+            availableBitRateList.push(getBitrateListForType(Constants.IMAGE, streamInfo));
+        }
+
+        eventBus.trigger(Events.AVAILABLE_BITRATES_LOADED, {
+            data: availableBitRateList,
+            sender: this
+        });
+    }
+
+    function getBitrateListForType(type, streamInfo) {
+        const allMediaForType =  adapter.getAllMediaInfoForType(streamInfo, type);
+        let mediaInfo = getMediaInfoForType(type, allMediaForType);
+        return abrController.getBitrateList(mediaInfo);
+    }
+
+    function setSelectedMediaInfosForOfflineStream(allMediaBitrateList) {
+        allSelectedMediaBitrateList = allMediaBitrateList;
         initializeMedia(streamInfo);
         setAvailableSegments();
     }
@@ -131,7 +175,39 @@ function OfflineStream(config) {
 
     function initializeMediaForType(type, streamInfo) {
         const allMediaForType = adapter.getAllMediaInfoForType(streamInfo, type);
+        let mediaInfo = getMediaInfoForType(type, allMediaForType);
+        if (mediaInfo !== null) {
+            mediaInfo = keepOnlySelectedBitrate(type, mediaInfo);
+            createOfflineStreamProcessor(mediaInfo, allMediaForType);
+        }
 
+    }
+
+    function keepOnlySelectedBitrate(type, mediaInfo) {
+        let bitrateForType = getSelectedBitrateListForType(type,allSelectedMediaBitrateList);
+        if (bitrateForType !== null) {
+            mediaInfo.bitrateList = bitrateForType;
+        }
+        return mediaInfo;
+    }
+
+    function getSelectedBitrateListForType(type, allSelectedMediaBitrateList) {
+        let currentMediaBitrate,
+            bitrateForType;
+
+        bitrateForType = null;
+
+        for (let i = 0; i < allSelectedMediaBitrateList.length; i++) {
+            currentMediaBitrate = JSON.parse(allSelectedMediaBitrateList[i]);
+            if (type == currentMediaBitrate.mediaType) {
+                bitrateForType = currentMediaBitrate;
+            }
+        }
+        return bitrateForType;
+    }
+
+
+    function getMediaInfoForType(type, allMediaForType) {
         let mediaInfo = null;
 
         if (!allMediaForType || allMediaForType.length === 0) {
@@ -142,8 +218,7 @@ function OfflineStream(config) {
         for (let i = 0, ln = allMediaForType.length; i < ln; i++) {
             mediaInfo = allMediaForType[i];
         }
-
-        createOfflineStreamProcessor(mediaInfo, allMediaForType);
+        return mediaInfo;
     }
 
     function getFragmentController() {
@@ -155,6 +230,7 @@ function OfflineStream(config) {
         offlineStreamProcessor.setConfig({
             type: mediaInfo.type,
             mimeType: mediaInfo.mimeType,
+            qualityIndex: mediaInfo.bitrateList ? mediaInfo.bitrateList.qualityIndex : null,
             timelineConverter: timelineConverter,
             adapter: adapter,
             dashManifestModel: dashManifestModel,
@@ -234,7 +310,6 @@ function OfflineStream(config) {
     function setAvailableSegments() {
         //TODO compter par taille de segments et non par le nombre
         for (let i = 0; i < offlineStreamProcessors.length; i++) {
-            console.log(offlineStreamProcessors[i].getAvailableSegmentsNumber());
             if (offlineStreamProcessors[i].getAvailableSegmentsNumber()) {
                 availableSegments = availableSegments +  offlineStreamProcessors[i].getAvailableSegmentsNumber();
             } else {    //format différent
@@ -270,6 +345,7 @@ function OfflineStream(config) {
     instance = {
         initialize: initialize,
         setConfig: setConfig,
+        setSelectedMediaInfosForOfflineStream: setSelectedMediaInfosForOfflineStream,
         offlineStreamProcessor: offlineStreamProcessor,
         getFragmentController: getFragmentController,
         getStreamInfo: getStreamInfo,

@@ -209,10 +209,15 @@ function OfflineController() {
     }
 
     function onOriginalManifestLoaded(e) {
-        console.log('manifest.url => ' + manifest.url);
         if (!urlUtils.isOfflineURL(manifest.url)) {
             eventBus.on(Events.FRAGMENT_LOADING_COMPLETED, storeFragment, instance);
             generateOfflineManifest(e.originalManifest);
+        }
+    }
+
+    function setSelectedMediaInfosForOfflineStream(allSelectedMediaInfos) {
+        for (let i = 0; i < streams.length; i++) {
+            streams[i].setSelectedMediaInfosForOfflineStream(allSelectedMediaInfos);
         }
     }
 
@@ -299,6 +304,7 @@ function OfflineController() {
         onManifestUpdated: onManifestUpdated,
         setConfig: setConfig,
         composeStreams: composeStreams,
+        setSelectedMediaInfosForOfflineStream: setSelectedMediaInfosForOfflineStream,
         stopRecord: stopRecord,
         resumeRecord: resumeRecord,
         deleteRecord: deleteRecord,
