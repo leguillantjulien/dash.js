@@ -226,7 +226,7 @@ function OfflineStream(config) {
     }
 
     function createOfflineStreamProcessor(mediaInfo, allMediaForType, optionalSettings) {
-        offlineStreamProcessor = OfflineStreamProcessor(context).create();
+        let offlineStreamProcessor = OfflineStreamProcessor(context).create();
         offlineStreamProcessor.setConfig({
             type: mediaInfo.type,
             mimeType: mediaInfo.mimeType,

@@ -53,6 +53,7 @@ function OfflineController() {
         metricsModel,
         dashManifestModel,
         offlineStoreController,
+        XMLManifest,
         timelineConverter,
         errHandler,
         streams,
@@ -211,7 +212,7 @@ function OfflineController() {
     function onOriginalManifestLoaded(e) {
         if (!urlUtils.isOfflineURL(manifest.url)) {
             eventBus.on(Events.FRAGMENT_LOADING_COMPLETED, storeFragment, instance);
-            generateOfflineManifest(e.originalManifest);
+            XMLManifest = e.originalManifest;
         }
     }
 
@@ -219,12 +220,16 @@ function OfflineController() {
         for (let i = 0; i < streams.length; i++) {
             streams[i].setSelectedMediaInfosForOfflineStream(allSelectedMediaInfos);
         }
+        generateOfflineManifest(XMLManifest,allSelectedMediaInfos);
     }
 
-    function generateOfflineManifest(originalManifest) {
+    function generateOfflineManifest(XMLManifest, allSelectedMediaInfos) {
         offlineStoreController.countManifest().then(function (keys) {
-            let parser = OfflineIndexDBManifestParser(context).create();
-            parser.parse(originalManifest).then(function (parsedManifest) {
+            let parser = OfflineIndexDBManifestParser(context).create({
+                allMediaInfos: allSelectedMediaInfos
+            });
+
+            parser.parse(XMLManifest).then(function (parsedManifest) {
                 if (parsedManifest !== null && keys !== null) {
                     let manifestId = keys + 1;
                     let offlineManifest = {

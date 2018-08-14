@@ -41,9 +41,10 @@ const ELEMENT_TYPE_SEGMENT_TEMPLATE = 'SegmentTemplate';
 const ELEMENT_TYPE_REPRESENTATION = 'Representation';
 const ATTRIBUTE_TYPE_ID = 'id';
 const ATTRIBUTE_TYPE_BANDWITH = 'bandwidth';
-
-function OfflineIndexDBManifestParser() {
+const OFFLINE_BASE_URL = 'offline_indexdb://'
+function OfflineIndexDBManifestParser(config) {
     const context = this.context;
+    const allMediaInfos = config.allMediaInfos;
 
     let instance,
         DOM,
@@ -86,26 +87,27 @@ function OfflineIndexDBManifestParser() {
         for (let i = 0; i < basesURL.length; i++) {
             let parent = basesURL[i].parentNode;
 
-            if (parent.nodeName === 'MPD') {
-                basesURL[i].innerHTML = 'offline_indexdb://';
-            } else if (parent.nodeName === 'Representation') {
+            if (parent.nodeName === ELEMENT_TYPE_MPD) {
+                basesURL[i].innerHTML = OFFLINE_BASE_URL;
+            } else if (parent.nodeName === ELEMENT_TYPE_REPRESENTATION) {
                 let adaptationsSet = parent.parentNode;
-                if (adaptationsSet.nodeName == 'AdaptationSet') {
+                if (adaptationsSet.nodeName == ELEMENT_TYPE_ADAPTATIONSET) {
 
                     if (urlUtils.isHTTPS(basesURL[i].innerHTML) || urlUtils.isHTTPURL(basesURL[i].innerHTML)) {
                         fragmentId = getFragmentId(basesURL[i].innerHTML);
                         representationId = getBestRepresentationId(adaptationsSet);
-                        basesURL[i].innerHTML = 'offline_indexdb://' + representationId + '_' + fragmentId;
+                        basesURL[i].innerHTML = OFFLINE_BASE_URL + representationId + '_' + fragmentId;
                     } else if (basesURL[i].innerHTML === './') {
-                        basesURL[i].innerHTML = 'offline_indexdb://';
+                        basesURL[i].innerHTML = OFFLINE_BASE_URL;
                     } else {
                         fragmentId = getFragmentId(basesURL[i].innerHTML);
                         representationId = getBestRepresentationId(adaptationsSet);
                         basesURL[i].innerHTML = representationId + '_' + fragmentId;
                     }
                 }
+            } else {
+                basesURL[i].innerHTML = OFFLINE_BASE_URL;
             }
-            //logger.debug('AFTER innerHTML ==> ' + basesURL[i].innerHTML);
         }
     }
 
@@ -120,23 +122,56 @@ function OfflineIndexDBManifestParser() {
         let adaptationsSet,
             currentAdaptationSet,
             currentAdaptationType,
+            bitrate,
             representations;
 
         adaptationsSet = currentPeriod.getElementsByTagName(ELEMENT_TYPE_ADAPTATIONSET);
 
         for (let i = 0; i < adaptationsSet.length; i++) {
             currentAdaptationSet = adaptationsSet[i];
-            currentAdaptationType = findAdaptationSetMimeType(currentAdaptationSet) ? findAdaptationSetMimeType(currentAdaptationSet) : null;
+            if (currentAdaptationSet) {
+                currentAdaptationType = findAdaptationType(currentAdaptationSet);
+                representations = findRepresentations(currentAdaptationSet);
+                bitrate = findBitrateForAdaptationSetType(currentAdaptationType);
 
-            representations = findRepresentations(currentAdaptationSet);
-            if (representations.length >= 1) {
-                findAndKeepOnlyBestRepresentation(currentAdaptationSet, representations);
-            }
-
-            if (getSegmentsTemplates(currentAdaptationSet).length >= 1) {
-                editSegmentTemplateAttributes(currentAdaptationSet);
+                if (representations.length >= 1 && bitrate !== null) {
+                    findAndKeepOnlySelectedBitrateRepresentation(currentAdaptationSet, representations, bitrate);
+                } else {
+                    findAndKeepOnlyBestRepresentation(currentAdaptationSet, representations);
+                }
+                let segmentTemplate = getSegmentTemplate(currentAdaptationSet);
+                if (segmentTemplate.length >= 1) {
+                    editSegmentTemplateAttributes(segmentTemplate);
+                }
             }
         }
+    }
+
+    function findAdaptationType(currentAdaptationSet) {
+        if (findAdaptationSetContentType(currentAdaptationSet) !== null) {
+            return findAdaptationSetContentType(currentAdaptationSet);
+        } else if (findAdaptationSetMimeType(currentAdaptationSet) !== null) {
+            let mimeType = findAdaptationSetMimeType(currentAdaptationSet);
+            return mimeType.substring(0, mimeType.indexOf('/'));
+        } else {
+            return null;
+        }
+    }
+
+    function findBitrateForAdaptationSetType(type) {
+        let bitrate = null;
+
+        for (let i = 0; i < allMediaInfos.length; i++) {
+            let currentMediaInfo = JSON.parse(allMediaInfos[i]);
+            if (currentMediaInfo.mediaType === type) {
+                bitrate = currentMediaInfo.bitrate;
+            }
+        }
+        return bitrate;
+    }
+
+    function findAdaptationSetContentType(currentAdaptationSet) {
+        return currentAdaptationSet.getAttribute('contentType');
     }
 
     function findAdaptationSetMimeType(currentAdaptationSet) {
@@ -147,7 +182,7 @@ function OfflineIndexDBManifestParser() {
         return currentAdaptationSet.getElementsByTagName(ELEMENT_TYPE_REPRESENTATION);
     }
 
-    function getSegmentsTemplates(currentAdaptationSet) {
+    function getSegmentTemplate(currentAdaptationSet) {
         return currentAdaptationSet.getElementsByTagName(ELEMENT_TYPE_SEGMENT_TEMPLATE);
     }
 
@@ -155,13 +190,13 @@ function OfflineIndexDBManifestParser() {
         for (let i = 0; i < segmentsTemplates.length; i++) {
             let media = segmentsTemplates[i].getAttribute('media');
             media = '$RepresentationID$_$Number$' + media.substring(media.indexOf('.'), media.length); //id + extension
+            segmentsTemplates[i].setAttribute('startNumber', '1');
             segmentsTemplates[i].setAttribute('media', media);
             segmentsTemplates[i].setAttribute('initialization','$RepresentationID$_0.m4v');
         }
     }
 
     function findAndKeepOnlyBestRepresentation(currentAdaptationSet, representations) {
-        console.log('findAndKeepOnlyBestRepresentation');
         let bestBandwidth = findBestBandwith(representations);
 
         if (bestBandwidth !== null) {
@@ -177,6 +212,19 @@ function OfflineIndexDBManifestParser() {
 
         do {
             if (parseInt(representations[i].getAttribute(ATTRIBUTE_TYPE_BANDWITH)) !== bestBandwidth) {
+                currentAdaptationSet.removeChild(representations[i]);
+            } else if (representations[i + 1] !== undefined) {
+                i++;
+            } else {
+                return;
+            }
+        } while (representations.length > 1);
+    }
+
+    function findAndKeepOnlySelectedBitrateRepresentation(currentAdaptationSet, representations, bitrate) {
+        let i = 0;
+        do {
+            if (parseInt(representations[i].getAttribute(ATTRIBUTE_TYPE_BANDWITH)) !== bitrate) {
                 currentAdaptationSet.removeChild(representations[i]);
             } else if (representations[i + 1] !== undefined) {
                 i++;

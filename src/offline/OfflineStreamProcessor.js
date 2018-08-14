@@ -64,6 +64,7 @@ function OfflineStreamProcessor() {
         representation,
         isStopped,
         stream,
+        voRepresentations,
         qualityIndex;
 
     function setConfig(config) {
@@ -294,15 +295,16 @@ function OfflineStreamProcessor() {
         }
         updating = true;
 
-        currentVoRepresentation = updateRepresentations(voAdaptation);
-
+        voRepresentations = updateRepresentations(voAdaptation);
+        currentVoRepresentation = voRepresentations[qualityIndex] !== undefined ? voRepresentations[qualityIndex] : voRepresentations[voRepresentations.length - 1];
         realAdaptation = newRealAdaptation;
+
         if (type !== Constants.VIDEO && type !== Constants.AUDIO  && type !== Constants.TEXT && type !== Constants.FRAGMENTED_TEXT) {
             updating = false;
             return;
         }
 
-        indexHandler.updateRepresentation(currentVoRepresentation, true); //Update only for the best Representation
+        indexHandler.updateRepresentation(currentVoRepresentation, true); //Update only one Representation
     }
 
     function onRepresentationUpdated(e) {
@@ -313,7 +315,7 @@ function OfflineStreamProcessor() {
     }
 
     function updateRepresentations(voAdaptation) {
-        return dashManifestModel.getRepresentationsForAdaptation(voAdaptation)[qualityIndex];
+        return dashManifestModel.getRepresentationsForAdaptation(voAdaptation);
     }
 
     function getRepresentation() {
@@ -341,7 +343,7 @@ function OfflineStreamProcessor() {
     }
 
     function getAvailableSegmentsNumber() {
-        return currentVoRepresentation.availableSegmentsNumber;
+        return voRepresentations.availableSegmentsNumber;
     }
 
     function getDownloadedSegments() {
@@ -349,6 +351,7 @@ function OfflineStreamProcessor() {
     }
 
     function resetInitialSettings() {
+        voRepresentations = [];
         isInitialized = false;
         qualityIndex = null;
         downloadedSegments = 0;
