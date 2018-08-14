@@ -41,7 +41,7 @@ const ELEMENT_TYPE_SEGMENT_TEMPLATE = 'SegmentTemplate';
 const ELEMENT_TYPE_REPRESENTATION = 'Representation';
 const ATTRIBUTE_TYPE_ID = 'id';
 const ATTRIBUTE_TYPE_BANDWITH = 'bandwidth';
-const OFFLINE_BASE_URL = 'offline_indexdb://'
+const OFFLINE_BASE_URL = 'offline_indexdb://';
 function OfflineIndexDBManifestParser(config) {
     const context = this.context;
     const allMediaInfos = config.allMediaInfos;
