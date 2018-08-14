@@ -30,6 +30,7 @@
  */
 import EventBus from './../core/EventBus';
 import Events from './../core/events/Events';
+import OfflineEvents from './OfflineEvents';
 import FactoryMaker from './../core/FactoryMaker';
 import Debug from './../core/Debug';
 import BaseURLController from './../streaming/controllers/BaseURLController';
@@ -53,6 +54,7 @@ function OfflineStream(config) {
         metricsModel,
         offlineStreamProcessor,
         offlineStreamProcessors,
+        finishedOfflineStreamProcessors,
         timelineConverter,
         errHandler,
         streamInfo,
@@ -64,8 +66,7 @@ function OfflineStream(config) {
     function setup() {
         logger = Debug(context).getInstance().getLogger(instance);
         resetInitialSettings();
-        eventBus.on(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, this);
-
+        Events.extend(OfflineEvents);
     }
 
     function resetInitialSettings() {
@@ -73,6 +74,7 @@ function OfflineStream(config) {
         availableSegments = 0;
         streamInfo = null;
         offlineStreamProcessors = [];
+        finishedOfflineStreamProcessors = 0;
         allSelectedMediaBitrateList = [];
     }
 
@@ -118,6 +120,8 @@ function OfflineStream(config) {
         });
         initializeMediaBitrate(streamInfo);
         setAvailableSegments();
+        eventBus.on(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, this);
+        eventBus.on(Events.OFFLINE_STREAM_PROCESSOR_COMPLETED, onOfflineStreamProcessorCompleted, this);
     }
 
     function initializeMediaBitrate(streamInfo) {
@@ -265,6 +269,17 @@ function OfflineStream(config) {
         }
     }
 
+    function onOfflineStreamProcessorCompleted(e) {
+        let sp = e.sender.getStreamProcessor();
+        if (sp.getStreamInfo() !== streamInfo) {
+            return;
+        }
+        finishedOfflineStreamProcessors++;
+        if (finishedOfflineStreamProcessors === offlineStreamProcessors.length) {
+            eventBus.trigger(Events.DOWNLOADING_FINISHED, {sender: this});
+        }
+    }
+
     function onDataUpdateCompleted(e) {
         let sp = e.sender.getStreamProcessor();
         if (sp.getStreamInfo() !== streamInfo) {
@@ -340,6 +355,7 @@ function OfflineStream(config) {
         resetInitialSettings();
 
         eventBus.off(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, this);
+        eventBus.off(Events.OFFLINE_STREAM_PROCESSOR_COMPLETED, onOfflineStreamProcessorCompleted, this);
     }
 
     instance = {

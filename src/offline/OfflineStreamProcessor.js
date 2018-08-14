@@ -156,6 +156,7 @@ function OfflineStreamProcessor() {
 
         stop();
         logger.info('Stream is complete');
+        eventBus.trigger(Events.OFFLINE_STREAM_PROCESSOR_COMPLETED, {sender: this});
     }
 
     function stop() {
