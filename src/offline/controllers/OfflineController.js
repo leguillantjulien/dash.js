@@ -30,6 +30,7 @@
  */
 import EventBus from './../../core/EventBus';
 import Events from './../../core/events/Events';
+import OfflineEvents from './../OfflineEvents';
 import FactoryMaker from './../../core/FactoryMaker';
 import Debug from './../../core/Debug';
 import ManifestUpdater from './../../streaming/ManifestUpdater';
@@ -69,6 +70,7 @@ function OfflineController() {
         offlineStoreController = OfflineStoreController(context).create();
         baseURLController = BaseURLController(context).getInstance();
         logger = Debug(context).getInstance().getLogger(instance);
+        Events.extend(OfflineEvents);
         streams = [];
         isRecordingStatus = false;
     }
