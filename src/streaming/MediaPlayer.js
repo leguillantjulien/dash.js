@@ -1951,7 +1951,7 @@ function MediaPlayer() {
 
 
     function getRecordProgression() {
-        if (offlineControllerInitialized) {
+        if (offlineControllerInitialized && offlineController.isRecording()) {
             return offlineController.getRecordProgression();
         }
     }

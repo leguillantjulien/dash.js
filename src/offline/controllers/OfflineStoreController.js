@@ -73,7 +73,7 @@ function OfflineStoreController() {
     function setDownloadingStatus(manifestId, status) {
         indexDBStore.setDownloadingStatus(manifestId, status);
     }
-    
+
     instance = {
         isFragmentStoreInitialized: isFragmentStoreInitialized,
         storeFragment: storeFragment,

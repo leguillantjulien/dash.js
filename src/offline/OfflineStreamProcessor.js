@@ -280,12 +280,11 @@ function OfflineStreamProcessor() {
                     fragmentModel.executeRequest(request);
                 }
             }
+            if (indexHandler.isMediaFinished(currentVoRepresentation) ) {
+                stop();
+            }
+            getAvailableSegmentsNumber();
         }
-
-        if (indexHandler.isMediaFinished(currentVoRepresentation) ) {
-            stop();
-        }
-        getAvailableSegmentsNumber();
     }
 
 
@@ -344,7 +343,7 @@ function OfflineStreamProcessor() {
     }
 
     function getAvailableSegmentsNumber() {
-        return voRepresentations.availableSegmentsNumber;
+        return getRepresentation().availableSegmentsNumber;
     }
 
     function getDownloadedSegments() {
@@ -360,7 +359,7 @@ function OfflineStreamProcessor() {
         mediaInfo = null;
         updating = false;
         realAdaptation = null;
-        currentVoRepresentation = null;
+        currentVoRepresentation = NaN;
         downloadedSegments = null;
         representation = null;
         type = null;

@@ -348,7 +348,7 @@ function OfflineStream(config) {
     }
 
     function reset() {
-
+        stopOfflineStreamProcessors();
         if (fragmentController) {
             fragmentController.reset();
             fragmentController = null;

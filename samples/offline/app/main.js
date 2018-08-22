@@ -255,6 +255,7 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
 
     $scope.player.on(dashjs.MediaPlayer.events.AVAILABLE_BITRATES_LOADED, function (e) { /* jshint ignore:line */
         $scope.availableBitrates = e.data;
+        $scope.refreshAvailableStreams();
         $scope.showRepresentationModal();
     }, $scope);
 
@@ -830,6 +831,8 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
 
         if (allSelectedMediaInfos.length >= 1) {
             $scope.player.initializeDownload(JSON.parse(JSON.stringify(allSelectedMediaInfos)));
+            $scope.updateRecordProgression();
+            $(".progress").show();
         } else {
             alert('You must select at least 1 quality !');
         }
@@ -837,8 +840,6 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
 
     $scope.doDownload = function () {
         $scope.player.record($scope.selectedItem.url);
-        $(".progress").show();
-        $scope.updateRecordProgression();
     }
 
     $scope.doStopDownload = function () {
