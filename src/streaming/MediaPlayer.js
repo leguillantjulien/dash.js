@@ -2008,9 +2008,9 @@ function MediaPlayer() {
         offlineControllerInitialized = true;
     }
 
-    function setSelectedMediaInfosForOfflineStream(allSelectedMediaInfos) {
+    function initializeDownload(allSelectedMediaInfos) {
         if (allSelectedMediaInfos) {
-            offlineController.setSelectedMediaInfosForOfflineStream(allSelectedMediaInfos);
+            offlineController.initializeDownload(allSelectedMediaInfos);
         }
     }
 
@@ -3162,7 +3162,7 @@ function MediaPlayer() {
         deleteRecord: deleteRecord,
         resumeRecord: resumeRecord,
         getRecordProgression: getRecordProgression,
-        setSelectedMediaInfosForOfflineStream: setSelectedMediaInfosForOfflineStream,
+        initializeDownload: initializeDownload,
         reset: reset
     };
 

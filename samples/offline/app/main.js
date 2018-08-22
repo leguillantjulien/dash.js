@@ -813,7 +813,7 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
         $('#text option:selected').val() !== undefined ? allSelectedMediaInfos.push($('#text option:selected').val()) : allSelectedMediaInfos;
 
         if (allSelectedMediaInfos.length >= 1) {
-            $scope.player.setSelectedMediaInfosForOfflineStream(JSON.parse(JSON.stringify(allSelectedMediaInfos)));
+            $scope.player.initializeDownload(JSON.parse(JSON.stringify(allSelectedMediaInfos)));
         } else {
             alert('You must select at least 1 quality !');
         }
