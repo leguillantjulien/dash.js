@@ -81,17 +81,11 @@ function IndexDBStore() {
         return isFragmentStoreInit;
     }
 
-    function dropFragmentStore(storeName) {
-        localforage.dropInstance({
-            driver: localforage.INDEXEDDB,
-            name: 'dash_offline_db',
-            version: 1.0,
-            storeName: storeName
-        }).then(function () {
-            fragmentStore = null;
-            isFragmentStoreInit = false;
+    function setDownloadingStatus(manifestId, newStatus) {
+        return getManifestByKey(manifestId).then(function (item) {
+            item.status = newStatus;
+            return updateManifest(item);
         });
-        return;
     }
 
     function getFragmentByKey(key) {
@@ -264,6 +258,7 @@ function IndexDBStore() {
         storeManifest: storeManifest,
         updateManifest: updateManifest,
         setFragmentStore: setFragmentStore,
+        setDownloadingStatus: setDownloadingStatus,
         countManifest: countManifest,
         getAllManifests: getAllManifests,
         dropFragmentStore: dropFragmentStore,
