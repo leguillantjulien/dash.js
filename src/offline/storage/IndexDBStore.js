@@ -153,6 +153,21 @@ function IndexDBStore() {
         });
     }
 
+    function updateManifest(manifest) {
+        return getAllManifests().then(function (array) {
+            try {
+                for (let i = 0; i < array.manifests.length; i++) {
+                    if (array.manifests[i].manifestId === manifest.manifestId) {
+                        array.manifests[i] = manifest;
+                    }
+                }
+                return manifestStore.setItem('manifest',array);
+            } catch (err) {
+                throw new Error('Any results found !');
+            }
+        });
+    }
+
     function storeManifest(manifest) {
         manifestStore.getItem('manifest').then(function (results) {
             let array = results ? results : { 'manifests': [] };
@@ -247,6 +262,7 @@ function IndexDBStore() {
         getManifestByKey: getManifestByKey,
         storeFragment: storeFragment,
         storeManifest: storeManifest,
+        updateManifest: updateManifest,
         setFragmentStore: setFragmentStore,
         countManifest: countManifest,
         getAllManifests: getAllManifests,
