@@ -85,7 +85,7 @@
                         <li class="dropdown-submenu" ng-if="availableStreams">
                             <a tabindex="-1" href="#">Offline Manifests</a>
                             <ul class="dropdown-menu">
-                                <li class="dropdown-submenu" ng-repeat="manifest in availableBitrates">
+                                <li class="dropdown-submenu" ng-repeat="manifest in availableStreams">
                                     <a tabindex="-1" href="#" ng-click="setStream(manifest)">
                                         {{manifest.fragmentStore}} : {{manifest.originalURL}}
                                         <span class="btn btn-danger btn-sm" ng-click="deleteStream(manifest.manifestId); $event.stopPropagation();">Delete</span>
