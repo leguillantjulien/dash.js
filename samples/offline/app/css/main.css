@@ -520,3 +520,18 @@ CONTROL BAR CSS NEEDS TO MOVE INTO THE CONTROL BAR
     font-size: .9em !important;
     padding: 0px;
 }
+
+/********************************************************
+Download Messages
+*********************************************************/
+.alert.alert-warning{
+    display: none;
+}
+
+.alert.alert-danger{
+    display: none;
+}
+
+.alert.alert-success{
+    display: none;
+}

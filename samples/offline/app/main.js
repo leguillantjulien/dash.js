@@ -794,6 +794,22 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
     ////////////////////////////////////////
     $(".progress").hide();
 
+    $scope.player.on(dashjs.MediaPlayer.events.DOWNLOADING_FINISHED, function (e) { /* jshint ignore:line */
+        $scope.successMessage  = e.message;
+        $(".alert.alert-success").show();
+        $(".alert.alert-success").fadeTo(2500, 500).slideUp(500, function(){
+            $(".alert.alert-success").slideUp(500);
+        });
+    }, $scope);
+
+    $scope.player.on(dashjs.MediaPlayer.events.DOWNLOADING_STOPPED, function (e) { /* jshint ignore:line */
+        $scope.warningMessage = e.message;
+        $(".alert.alert-warning").show();
+        $(".alert.alert-warning").fadeTo(2500, 500).slideUp(500, function(){
+            $(".alert.alert-warning").slideUp(500);
+        });
+    }, $scope);
+
     $scope.showRepresentationModal = function () {
         $('#representationModal').modal('show');
     }

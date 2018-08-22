@@ -287,7 +287,7 @@ function OfflineController() {
         for (let i = 0, ln = streams.length; i < ln; i++) {
             streams[i].stopOfflineStreamProcessors();
         }
-        eventBus.trigger(Events.DOWNLOADING_STOPPED, {sender: this, status: 'stopped'});
+        eventBus.trigger(Events.DOWNLOADING_STOPPED, {sender: this, status: 'stopped', message: 'Downloading has been stopped for this stream !'});
     }
 
     function deleteRecord(manifestId) {

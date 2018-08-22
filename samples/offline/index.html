@@ -63,6 +63,17 @@
                 <span id="commit-info"><!-- commit-info --></span>
             </div>
         </div>
+        <!-- ALERT POPUP -->
+        <div class="alert alert-success" role="alert">
+            {{successMessage}}
+        </div>
+        <div class="alert alert-warning" role="alert">
+            {{warningMessage}}
+        </div>
+
+        <div class="alert alert-danger" role="alert">
+            {{dangerMessage}}
+        </div>
 
         <div class="row">
             <div class="input-group">
@@ -74,10 +85,10 @@
                         <li class="dropdown-submenu" ng-if="availableStreams">
                             <a tabindex="-1" href="#">Offline Manifests</a>
                             <ul class="dropdown-menu">
-                                <li class="dropdown-submenu" ng-repeat="item in availableStreams">
-                                    <a tabindex="-1" href="#" ng-click="setStream(item.manifest)">
-                                        {{item.manifest.fragmentStore}} : {{item.manifest.originalURL}}
-                                        <span class="btn btn-danger btn-sm" ng-click="deleteStream(item.manifest.manifestId); $event.stopPropagation();">Delete</span>
+                                <li class="dropdown-submenu" ng-repeat="manifest in availableBitrates">
+                                    <a tabindex="-1" href="#" ng-click="setStream(manifest)">
+                                        {{manifest.fragmentStore}} : {{manifest.originalURL}}
+                                        <span class="btn btn-danger btn-sm" ng-click="deleteStream(manifest.manifestId); $event.stopPropagation();">Delete</span>
                                     </a>
                                 </li>
 
@@ -301,7 +312,6 @@
 
         </div>
 
-        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#representationModal">Launch demo modal</button>
         <!-- SELECT REPRESENTATION SECTIOn -->
         <div id="representationModal" class="modal" tabindex="-1" role="dialog">
                 <div class="modal-dialog" role="document">

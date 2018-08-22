@@ -278,7 +278,7 @@ function OfflineStream(config) {
         }
         finishedOfflineStreamProcessors++;
         if (finishedOfflineStreamProcessors === offlineStreamProcessors.length) {
-            eventBus.trigger(Events.DOWNLOADING_FINISHED, {sender: this, status: DOWNLOAD_FINISHED});
+            eventBus.trigger(Events.DOWNLOADING_FINISHED, {sender: this, status: DOWNLOAD_FINISHED, message: 'Downloading has been successfully completed for this stream !'});
         }
     }
 
