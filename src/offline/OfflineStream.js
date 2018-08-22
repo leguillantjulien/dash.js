@@ -46,6 +46,8 @@ function OfflineStream(config) {
     const context = this.context;
     const eventBus = EventBus(context).getInstance();
 
+    const DOWNLOAD_FINISHED = 'finished';
+
     let instance,
         adapter,
         abrController,
@@ -276,7 +278,7 @@ function OfflineStream(config) {
         }
         finishedOfflineStreamProcessors++;
         if (finishedOfflineStreamProcessors === offlineStreamProcessors.length) {
-            eventBus.trigger(Events.DOWNLOADING_FINISHED, {sender: this});
+            eventBus.trigger(Events.DOWNLOADING_FINISHED, {sender: this, status: DOWNLOAD_FINISHED});
         }
     }
 
