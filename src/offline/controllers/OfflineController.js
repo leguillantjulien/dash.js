@@ -136,6 +136,9 @@ function OfflineController() {
         eventBus.on(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, instance);
         eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
         eventBus.on(Events.ORIGINAL_MANIFEST_LOADED, onOriginalManifestLoaded, instance);
+        eventBus.on(Events.DOWNLOADING_STARTED, onDownloadingStarted, instance);
+        eventBus.on(Events.DOWNLOADING_STOPPED, onDownloadingStopped, instance);
+        eventBus.on(Events.DOWNLOADING_FINISHED, onDownloadingFinished, instance);
         manifestLoader.load(url);
         isRecordingStatus = true;
     }
@@ -155,6 +158,25 @@ function OfflineController() {
                 throw new Error(err);
             }
         }
+        }
+
+    function onDownloadingStarted(e) {
+        if (!e.error && e.status) {
+            offlineStoreController.setDownloadingStatus(manifestId, e.status);
+        }
+    }
+
+    function onDownloadingStopped(e) {
+        if (!e.error && manifestId) {
+            offlineStoreController.setDownloadingStatus(manifestId, e.status);
+        }
+    }
+
+    function onDownloadingFinished(e) {
+        if (!e.error && manifestId) {
+            offlineStoreController.setDownloadingStatus(manifestId, e.status);
+        }
+        resetRecord();
     }
 
     function composeStreams() {
@@ -257,6 +279,7 @@ function OfflineController() {
         for (let i = 0, ln = streams.length; i < ln; i++) {
             streams[i].stopOfflineStreamProcessors();
         }
+        eventBus.trigger(Events.DOWNLOADING_STOPPED, {sender: this, status: 'stopped'});
     }
 
     function deleteRecord(manifestId) {
@@ -294,6 +317,9 @@ function OfflineController() {
         eventBus.off(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, instance);
         eventBus.off(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
         eventBus.off(Events.ORIGINAL_MANIFEST_LOADED, onOriginalManifestLoaded, instance);
+        eventBus.off(Events.DOWNLOADING_STARTED, onDownloadingStarted, instance);
+        eventBus.off(Events.DOWNLOADING_STOPPED, onDownloadingStopped, instance);
+        eventBus.off(Events.DOWNLOADING_FINISHED, onDownloadingFinished, instance);
     }
 
     function reset() {
