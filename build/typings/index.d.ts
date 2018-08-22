@@ -271,7 +271,7 @@ declare namespace dashjs {
     }
 
     interface MediaPlayerEvents {
-        AVAILABLE_BITRATES_LOADED: 'AvailableBitratesLoaded',
+        AVAILABLE_BITRATES_LOADED: 'availableBitratesLoaded',
         AST_IN_FUTURE: 'astInFuture';
         BUFFER_EMPTY: 'bufferStalled';
         BUFFER_LEVEL_STATE_CHANGED: 'bufferStateChanged';
