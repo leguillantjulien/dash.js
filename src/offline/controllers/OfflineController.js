@@ -291,7 +291,8 @@ function OfflineController() {
     }
 
     function deleteRecord(manifestId) {
-        if (streams !== null) {
+
+        if (streams.length >= 1) {
             stopRecord();
         }
         return offlineStoreController.deleteManifestById(manifestId).then(function () {
