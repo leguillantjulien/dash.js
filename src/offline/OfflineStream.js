@@ -33,7 +33,7 @@ import Events from './../core/events/Events';
 import OfflineEvents from './OfflineEvents';
 import FactoryMaker from './../core/FactoryMaker';
 import Debug from './../core/Debug';
-import BaseURLController from './../streaming/controllers/BaseURLController';
+import MetricsModel from './../streaming/models/MetricsModel';
 import FragmentController from './../streaming/controllers/FragmentController';
 import OfflineStreamProcessor from './OfflineStreamProcessor';
 import Constants from './../streaming/constants/Constants';
@@ -53,11 +53,9 @@ function OfflineStream(config) {
         abrController,
         baseURLController,
         dashManifestModel,
-        metricsModel,
         offlineStreamProcessor,
         offlineStreamProcessors,
         finishedOfflineStreamProcessors,
-        timelineConverter,
         errHandler,
         streamInfo,
         fragmentController,
@@ -83,10 +81,6 @@ function OfflineStream(config) {
     function setConfig(config) {
         if (!config) return;
 
-        if (config.metricsModel) {
-            metricsModel = config.metricsModel;
-        }
-
         if (config.dashManifestModel) {
             dashManifestModel = config.dashManifestModel;
         }
@@ -99,12 +93,12 @@ function OfflineStream(config) {
             errHandler = config.errHandler;
         }
 
-        if (config.timelineConverter) {
-            timelineConverter = config.timelineConverter;
-        }
-
         if (config.abrController) {
             abrController = config.abrController;
+        }
+
+        if (config.baseURLController) {
+            baseURLController = config.baseURLController;
         }
 
     }
@@ -113,12 +107,8 @@ function OfflineStream(config) {
         streamInfo = StreamInfo;
         fragmentController = FragmentController(context).create({
             errHandler: errHandler,
-            metricsModel: metricsModel,
+            metricsModel: MetricsModel(context).getInstance(),
             requestModifier: RequestModifier(context).getInstance()
-        });
-        baseURLController = BaseURLController(context).getInstance();
-        baseURLController.setConfig({
-            dashManifestModel: dashManifestModel
         });
         initializeMediaBitrate(streamInfo);
         setAvailableSegments();
@@ -237,14 +227,12 @@ function OfflineStream(config) {
             type: mediaInfo.type,
             mimeType: mediaInfo.mimeType,
             qualityIndex: mediaInfo.bitrateList ? mediaInfo.bitrateList.qualityIndex : null,
-            timelineConverter: timelineConverter,
             adapter: adapter,
             dashManifestModel: dashManifestModel,
             baseURLController: baseURLController,
             errHandler: errHandler,
             stream: instance,
-            abrController: abrController,
-            metricsModel: metricsModel
+            abrController: abrController
         });
         offlineStreamProcessors.push(offlineStreamProcessor);
         offlineStreamProcessor.initialize();

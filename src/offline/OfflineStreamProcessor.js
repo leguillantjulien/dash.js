@@ -35,6 +35,8 @@ import FactoryMaker from './../core/FactoryMaker';
 import DashHandler from './../dash/DashHandler';
 import Constants from './../streaming/constants/Constants';
 import OfflineDownloaderRequestRule from './rules/OfflineDownloaderRequestRule';
+import MetricsModel from './../streaming/models/MetricsModel';
+import TimelineConverter from './../dash/utils/TimelineConverter';
 
 function OfflineStreamProcessor() {
 
@@ -51,7 +53,6 @@ function OfflineStreamProcessor() {
         baseURLController,
         fragmentModel,
         dashManifestModel,
-        timelineConverter,
         mediaInfo,
         abrController,
         updating,
@@ -59,7 +60,6 @@ function OfflineStreamProcessor() {
         currentVoRepresentation,
         offlineDownloaderRequestRule,
         downloadedSegments,
-        metricsModel,
         isInitialized,
         representation,
         isStopped,
@@ -79,10 +79,6 @@ function OfflineStreamProcessor() {
             stream = config.stream;
         }
 
-        if (config.adapter) {
-            adapter = config.adapter;
-        }
-
         if (config.errHandler) {
             errHandler = config.errHandler;
         }
@@ -95,10 +91,6 @@ function OfflineStreamProcessor() {
             qualityIndex = config.qualityIndex;
         }
 
-        if (config.timelineConverter) {
-            timelineConverter = config.timelineConverter;
-        }
-
         if (config.adapter) {
             adapter = config.adapter;
         }
@@ -109,10 +101,6 @@ function OfflineStreamProcessor() {
 
         if (config.abrController) {
             abrController = config.abrController;
-        }
-
-        if (config.metricsModel) {
-            metricsModel = config.metricsModel;
         }
 
         if (config.dashManifestModel) {
@@ -176,9 +164,9 @@ function OfflineStreamProcessor() {
         indexHandler = DashHandler(context).create({
             mimeType: mimeType,
             baseURLController: baseURLController,
-            metricsModel: metricsModel,
+            metricsModel: MetricsModel(context).getInstance(),
             errHandler: errHandler,
-            timelineConverter: timelineConverter
+            timelineConverter:  TimelineConverter(context).getInstance()
         });
         indexHandler.initialize(instance);
 
@@ -369,9 +357,6 @@ function OfflineStreamProcessor() {
     function reset() {
         resetInitialSettings();
         indexHandler.reset();
-        baseURLController.reset();
-        metricsModel.clearAllCurrentMetrics();
-        timelineConverter.reset();
         abrController.unRegisterStreamType(type);
 
         eventBus.off(Events.STREAM_COMPLETED, onStreamCompleted, instance);

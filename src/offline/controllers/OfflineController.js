@@ -52,11 +52,9 @@ function OfflineController() {
         manifestLoader,
         manifestModel,
         manifestUpdater,
-        metricsModel,
         dashManifestModel,
         offlineStoreController,
         XMLManifest,
-        timelineConverter,
         errHandler,
         streams,
         manifest,
@@ -96,10 +94,6 @@ function OfflineController() {
             manifestLoader = config.manifestLoader;
         }
 
-        if (config.metricsModel) {
-            metricsModel = config.metricsModel;
-        }
-
         if (config.manifestModel) {
             manifestModel = config.manifestModel;
         }
@@ -114,10 +108,6 @@ function OfflineController() {
 
         if (config.errHandler) {
             errHandler = config.errHandler;
-        }
-
-        if (config.timelineConverter) {
-            timelineConverter = config.timelineConverter;
         }
 
         manifestUpdater.setConfig({
@@ -193,12 +183,10 @@ function OfflineController() {
                     manifestUpdater: manifestUpdater,
                     dashManifestModel: dashManifestModel,
                     adapter: adapter,
-                    timelineConverter: timelineConverter,
                     errHandler: errHandler,
                     baseURLController: baseURLController,
                     offlineController: instance,
-                    abrController: abrController,
-                    metricsModel: metricsModel
+                    abrController: abrController
                 });
                 stream.initialize(streamInfo);
                 streams.push(stream);

@@ -1961,9 +1961,7 @@ function MediaPlayer() {
 
         const manifestLoader = createManifestLoader();
 
-        metricsModel = MetricsModel(context).getInstance();
         // init some controllers and models
-        timelineConverter = TimelineConverter(context).getInstance();
 
         if (!abrController) {
             abrController = AbrController(context).getInstance();
@@ -1997,12 +1995,10 @@ function MediaPlayer() {
 
         offlineController.setConfig({
             manifestLoader: manifestLoader,
-            metricsModel: metricsModel,
             manifestModel: manifestModel,
             dashManifestModel: dashManifestModel,
             adapter: adapter,
             errHandler: errHandler,
-            timelineConverter: timelineConverter,
             abrController: abrController
         });
         offlineControllerInitialized = true;
