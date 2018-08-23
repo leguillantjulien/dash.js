@@ -271,7 +271,6 @@ declare namespace dashjs {
     }
 
     interface MediaPlayerEvents {
-        AVAILABLE_BITRATES_LOADED: 'AvailableBitratesLoaded',
         AST_IN_FUTURE: 'astInFuture';
         BUFFER_EMPTY: 'bufferStalled';
         BUFFER_LEVEL_STATE_CHANGED: 'bufferStateChanged';
@@ -488,12 +487,6 @@ declare namespace dashjs {
     export interface MetricChangedEvent extends Event {
         type: MediaPlayerEvents['METRIC_CHANGED'];
         mediaType: 'video' | 'audio' | 'fragmentedText';
-    }
-
-    export interface OfflineStreamEvent extends Event {
-        type: MediaPlayerEvents['AVAILABLE_BITRATES_LOADED'];
-        data: object;
-        sender: object;
     }
 
     export interface PeriodSwitchEvent extends Event {

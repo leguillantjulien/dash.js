@@ -40,7 +40,7 @@ import EventsBase from './EventsBase';
 class CoreEvents extends EventsBase {
     constructor () {
         super();
-        this.AVAILABLE_BITRATES_LOADED = 'AvailableBitratesLoaded';
+        this.AVAILABLE_BITRATES_LOADED = 'availableBitratesLoaded';
         this.BUFFERING_COMPLETED = 'bufferingCompleted';
         this.BUFFER_CLEARED = 'bufferCleared';
         this.BUFFER_LEVEL_UPDATED = 'bufferLevelUpdated';

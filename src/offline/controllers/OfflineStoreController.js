@@ -69,6 +69,11 @@ function OfflineStoreController() {
     function isFragmentStoreInitialized() {
         return indexDBStore.isFragmentStoreInitialized();
     }
+
+    function setDownloadingStatus(manifestId, status) {
+        indexDBStore.setDownloadingStatus(manifestId, status);
+    }
+
     instance = {
         isFragmentStoreInitialized: isFragmentStoreInitialized,
         storeFragment: storeFragment,
@@ -76,7 +81,8 @@ function OfflineStoreController() {
         setFragmentStore: setFragmentStore,
         countManifest: countManifest,
         getAllManifests: getAllManifests,
-        deleteManifestById: deleteManifestById
+        deleteManifestById: deleteManifestById,
+        setDownloadingStatus: setDownloadingStatus
     };
 
     setup();

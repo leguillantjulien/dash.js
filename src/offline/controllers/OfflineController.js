@@ -30,6 +30,7 @@
  */
 import EventBus from './../../core/EventBus';
 import Events from './../../core/events/Events';
+import OfflineEvents from './../OfflineEvents';
 import FactoryMaker from './../../core/FactoryMaker';
 import Debug from './../../core/Debug';
 import ManifestUpdater from './../../streaming/ManifestUpdater';
@@ -47,6 +48,7 @@ function OfflineController() {
         adapter,
         abrController,
         baseURLController,
+        manifestId,
         manifestLoader,
         manifestModel,
         manifestUpdater,
@@ -69,6 +71,7 @@ function OfflineController() {
         offlineStoreController = OfflineStoreController(context).create();
         baseURLController = BaseURLController(context).getInstance();
         logger = Debug(context).getInstance().getLogger(instance);
+        Events.extend(OfflineEvents);
         streams = [];
         isRecordingStatus = false;
     }
@@ -134,6 +137,9 @@ function OfflineController() {
         eventBus.on(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, instance);
         eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
         eventBus.on(Events.ORIGINAL_MANIFEST_LOADED, onOriginalManifestLoaded, instance);
+        eventBus.on(Events.DOWNLOADING_STARTED, onDownloadingStarted, instance);
+        eventBus.on(Events.DOWNLOADING_STOPPED, onDownloadingStopped, instance);
+        eventBus.on(Events.DOWNLOADING_FINISHED, onDownloadingFinished, instance);
         manifestLoader.load(url);
         isRecordingStatus = true;
     }
@@ -153,6 +159,25 @@ function OfflineController() {
                 throw new Error(err);
             }
         }
+    }
+
+    function onDownloadingStarted(e) {
+        if (!e.error && e.status) {
+            offlineStoreController.setDownloadingStatus(manifestId, e.status);
+        }
+    }
+
+    function onDownloadingStopped(e) {
+        if (!e.error && manifestId) {
+            offlineStoreController.setDownloadingStatus(manifestId, e.status);
+        }
+    }
+
+    function onDownloadingFinished(e) {
+        if (!e.error && manifestId) {
+            offlineStoreController.setDownloadingStatus(manifestId, e.status);
+        }
+        resetRecord();
     }
 
     function composeStreams() {
@@ -187,22 +212,12 @@ function OfflineController() {
     function storeFragment(e) {
         if (e.request !== null) {
             let fragmentName = e.request.representationId + '_' + e.request.index;
-            if (!offlineStoreController.isFragmentStoreInitialized()) {
-                setFragmentStore().then(function () {
-                    offlineStoreController.storeFragment(fragmentName, e.response);
-                });
-            } else {
-                offlineStoreController.storeFragment(fragmentName, e.response);
-            }
-
+            offlineStoreController.storeFragment(fragmentName, e.response);
         }
     }
 
-    function setFragmentStore() {
-        return offlineStoreController.countManifest().then(function (count) {
-            let storeName = 'manifest_' + (count + 1);
-            return offlineStoreController.setFragmentStore(storeName);
-        });
+    function setFragmentStore(manifestId) {
+        return offlineStoreController.setFragmentStore('manifest_' + manifestId);
     }
 
     function storeOfflineManifest(encodedManifest) {
@@ -220,30 +235,47 @@ function OfflineController() {
         for (let i = 0; i < streams.length; i++) {
             streams[i].setSelectedMediaInfosForOfflineStream(allSelectedMediaInfos);
         }
-        generateOfflineManifest(XMLManifest,allSelectedMediaInfos);
     }
 
-    function generateOfflineManifest(XMLManifest, allSelectedMediaInfos) {
-        offlineStoreController.countManifest().then(function (keys) {
-            let parser = OfflineIndexDBManifestParser(context).create({
-                allMediaInfos: allSelectedMediaInfos
+    function initializeDownload(allSelectedMediaInfos) {
+        try {
+            generateManifestId().then(function (mId) {
+                manifestId = mId;
+                setFragmentStore(manifestId);
+            }).then(function () {
+                setSelectedMediaInfosForOfflineStream(allSelectedMediaInfos);
+                generateOfflineManifest(XMLManifest, allSelectedMediaInfos, manifestId);
             });
+        } catch (err) {
+            throw new Error(err);
+        }
+    }
 
-            parser.parse(XMLManifest).then(function (parsedManifest) {
-                if (parsedManifest !== null && keys !== null) {
-                    let manifestId = keys + 1;
-                    let offlineManifest = {
-                        'fragmentStore': 'manifest_' + manifestId,
-                        'manifestId': manifestId,
-                        'url': 'offline_indexdb://' + manifestId,
-                        'originalURL': manifest.url,
-                        'manifest': parsedManifest
-                    };
-                    storeOfflineManifest(offlineManifest);
-                } else {
-                    throw new Error('falling parsing offline manifest');
-                }
-            });
+    function generateOfflineManifest(XMLManifest, allSelectedMediaInfos, manifestId) {
+        let parser = OfflineIndexDBManifestParser(context).create({
+            allMediaInfos: allSelectedMediaInfos
+        });
+
+        parser.parse(XMLManifest).then(function (parsedManifest) {
+            if (parsedManifest !== null && manifestId !== null) {
+                let offlineManifest = {
+                    'fragmentStore': 'manifest_' + manifestId,
+                    'status': 'created',
+                    'manifestId': manifestId,
+                    'url': 'offline_indexdb://' + manifestId,
+                    'originalURL': manifest.url,
+                    'manifest': parsedManifest
+                };
+                storeOfflineManifest(offlineManifest);
+            } else {
+                throw new Error('falling parsing offline manifest');
+            }
+        });
+    }
+
+    function generateManifestId() {
+        return offlineStoreController.countManifest().then(function (count) {
+            return count + 1;
         });
     }
 
@@ -255,10 +287,12 @@ function OfflineController() {
         for (let i = 0, ln = streams.length; i < ln; i++) {
             streams[i].stopOfflineStreamProcessors();
         }
+        eventBus.trigger(Events.DOWNLOADING_STOPPED, {sender: this, status: 'stopped', message: 'Downloading has been stopped for this stream !'});
     }
 
     function deleteRecord(manifestId) {
-        if (streams !== null) {
+
+        if (streams.length >= 1) {
             stopRecord();
         }
         return offlineStoreController.deleteManifestById(manifestId).then(function () {
@@ -283,19 +317,21 @@ function OfflineController() {
     }
 
     function resetRecord() {
-        stopRecord();
         for (let i = 0, ln = streams.length; i < ln; i++) {
             streams[i].reset();
         }
         isRecordingStatus = false;
         streams = [];
+        manifestId = null;
         eventBus.off(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, instance);
         eventBus.off(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
         eventBus.off(Events.ORIGINAL_MANIFEST_LOADED, onOriginalManifestLoaded, instance);
+        eventBus.off(Events.DOWNLOADING_STARTED, onDownloadingStarted, instance);
+        eventBus.off(Events.DOWNLOADING_STOPPED, onDownloadingStopped, instance);
+        eventBus.off(Events.DOWNLOADING_FINISHED, onDownloadingFinished, instance);
     }
 
     function reset() {
-        logger.warn('reset');
         if (isRecording()) {
             resetRecord();
         }
@@ -309,7 +345,7 @@ function OfflineController() {
         onManifestUpdated: onManifestUpdated,
         setConfig: setConfig,
         composeStreams: composeStreams,
-        setSelectedMediaInfosForOfflineStream: setSelectedMediaInfosForOfflineStream,
+        initializeDownload: initializeDownload,
         stopRecord: stopRecord,
         resumeRecord: resumeRecord,
         deleteRecord: deleteRecord,

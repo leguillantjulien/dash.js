@@ -255,6 +255,7 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
 
     $scope.player.on(dashjs.MediaPlayer.events.AVAILABLE_BITRATES_LOADED, function (e) { /* jshint ignore:line */
         $scope.availableBitrates = e.data;
+        $scope.refreshAvailableStreams();
         $scope.showRepresentationModal();
     }, $scope);
 
@@ -794,6 +795,22 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
     ////////////////////////////////////////
     $(".progress").hide();
 
+    $scope.player.on(dashjs.MediaPlayer.events.DOWNLOADING_FINISHED, function (e) { /* jshint ignore:line */
+        $scope.successMessage  = e.message;
+        $(".alert.alert-success").show();
+        $(".alert.alert-success").fadeTo(2500, 500).slideUp(500, function(){
+            $(".alert.alert-success").slideUp(500);
+        });
+    }, $scope);
+
+    $scope.player.on(dashjs.MediaPlayer.events.DOWNLOADING_STOPPED, function (e) { /* jshint ignore:line */
+        $scope.warningMessage = e.message;
+        $(".alert.alert-warning").show();
+        $(".alert.alert-warning").fadeTo(2500, 500).slideUp(500, function(){
+            $(".alert.alert-warning").slideUp(500);
+        });
+    }, $scope);
+
     $scope.showRepresentationModal = function () {
         $('#representationModal').modal('show');
     }
@@ -813,7 +830,9 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
         $('#text option:selected').val() !== undefined ? allSelectedMediaInfos.push($('#text option:selected').val()) : allSelectedMediaInfos;
 
         if (allSelectedMediaInfos.length >= 1) {
-            $scope.player.setSelectedMediaInfosForOfflineStream(JSON.parse(JSON.stringify(allSelectedMediaInfos)));
+            $scope.player.initializeDownload(JSON.parse(JSON.stringify(allSelectedMediaInfos)));
+            $scope.updateRecordProgression();
+            $(".progress").show();
         } else {
             alert('You must select at least 1 quality !');
         }
@@ -821,8 +840,6 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
 
     $scope.doDownload = function () {
         $scope.player.record($scope.selectedItem.url);
-        $(".progress").show();
-        $scope.updateRecordProgression();
     }
 
     $scope.doStopDownload = function () {

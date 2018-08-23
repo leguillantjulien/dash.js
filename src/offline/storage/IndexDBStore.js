@@ -81,17 +81,11 @@ function IndexDBStore() {
         return isFragmentStoreInit;
     }
 
-    function dropFragmentStore(storeName) {
-        localforage.dropInstance({
-            driver: localforage.INDEXEDDB,
-            name: 'dash_offline_db',
-            version: 1.0,
-            storeName: storeName
-        }).then(function () {
-            fragmentStore = null;
-            isFragmentStoreInit = false;
+    function setDownloadingStatus(manifestId, newStatus) {
+        return getManifestByKey(manifestId).then(function (item) {
+            item.status = newStatus;
+            return updateManifest(item);
         });
-        return;
     }
 
     function getFragmentByKey(key) {
@@ -105,29 +99,17 @@ function IndexDBStore() {
     }
 
     function getManifestByKey(key) {
-        return manifestStore.getItem('manifest').then(function (manifestsArray) {
-            let manifests,
-                item,
-                response;
-
-            if (manifestsArray && manifestsArray.manifests) {
-                manifests = manifestsArray.manifests;
-
-                for (let i = 0; i < manifests.length; i++) {
-                    if (manifests[i].manifest.manifestId === parseInt(key)) {
-                        item = manifests[i];
+        return getAllManifests().then(function (array) {
+            if (array) {
+                let item = null;
+                for (let i = 0; i < array.manifests.length; i++) {
+                    if (array.manifests[i].manifestId === parseInt(key)) {
+                        item = array.manifests[i];
                     }
                 }
-
                 if (item !== null) {
-                    response = {
-                        'manifest': entities.decode(item.manifest.manifest),
-                        'url': item.manifest.url,
-                        'originalURL': item.manifest.originalURL,
-                        'fragmentStore': item.manifest.fragmentStore
-                    };
-
-                    return Promise.resolve(response);
+                    item.manifest = entities.decode(item.manifest);
+                    return Promise.resolve(item);
                 } else {
                     return Promise.reject('Cannot found manifest with this manifestId !');
                 }
@@ -141,20 +123,19 @@ function IndexDBStore() {
 
     function getAllManifests() {
         return manifestStore.getItem('manifest').then(function (array) {
-            return Promise.resolve(array);
+            return Promise.resolve(array ? array : { 'manifests': [] });
         }).catch(function (err) {
             return Promise.reject(err);
         });
     }
 
     function countManifest() {
-        return manifestStore.getItem('manifest').then(function (manifestsArray) {
+        return getAllManifests().then(function (array) {
             let higherManifestId = 0;
-            if (manifestsArray && manifestsArray.manifests) {
-                let manifests = manifestsArray.manifests;
-                for (let i = 0; i < manifests.length; i++) {
-                    if (manifests[i].manifest.manifestId > higherManifestId) {
-                        higherManifestId = manifests[i].manifest.manifestId;
+            if (array) {
+                for (let i = 0; i < array.manifests.length; i++) {
+                    if (array.manifests[i].manifestId > higherManifestId) {
+                        higherManifestId = array.manifests[i].manifestId;
                     }
                 }
                 return Promise.resolve(higherManifestId);
@@ -166,11 +147,26 @@ function IndexDBStore() {
         });
     }
 
+    function updateManifest(manifest) {
+        return getAllManifests().then(function (array) {
+            try {
+                for (let i = 0; i < array.manifests.length; i++) {
+                    if (array.manifests[i].manifestId === manifest.manifestId) {
+                        array.manifests[i] = manifest;
+                    }
+                }
+                return manifestStore.setItem('manifest',array);
+            } catch (err) {
+                throw new Error('Any results found !');
+            }
+        });
+    }
+
     function storeManifest(manifest) {
         manifestStore.getItem('manifest').then(function (results) {
-            let manifestsArray = results ? results : {'manifests': [] };
-            manifestsArray.manifests.push({['manifest']: manifest} );
-            manifestStore.setItem('manifest',manifestsArray);
+            let array = results ? results : { 'manifests': [] };
+            array.manifests.push(manifest);
+            manifestStore.setItem('manifest',array);
         });
     }
 
@@ -198,18 +194,29 @@ function IndexDBStore() {
         });
     }
 
-    function deleteManifestById(manifestId) {
-        return manifestStore.getItem('manifest').then(function (manifestsArray) {
-            if (manifestsArray && manifestsArray.manifests) {
-                return deleteManifestStore('manifest_' + manifestId).then(function () {
-                    let manifests = manifestsArray.manifests;
+    function dropFragmentStore(storeName) {
+        localforage.dropInstance({
+            driver: localforage.INDEXEDDB,
+            name: 'dash_offline_db',
+            version: 1.0,
+            storeName: storeName
+        }).then(function () {
+            fragmentStore = null;
+            isFragmentStoreInit = false;
+        });
+        return;
+    }
 
-                    for (let i = 0; i < manifests.length; i++) {
-                        if (manifests[i].manifest.manifestId === parseInt(manifestId)) {
-                            manifests.splice(i, 1);
+    function deleteManifestById(manifestId) {
+        return manifestStore.getItem('manifest').then(function (array) {
+            if (array) {
+                return deleteManifestStore('manifest_' + manifestId).then(function () {
+                    for (let i = 0; i < array.manifests.length; i++) {
+                        if (array.manifests[i].manifestId === parseInt(manifestId)) {
+                            array.manifests.splice(i, 1);
                         }
                     }
-                    return manifestStore.setItem('manifest', manifestsArray).then(function () {
+                    return manifestStore.setItem('manifest', array).then(function () {
                         return Promise.resolve('This stream has been successfull removed !');
                     }).catch(function () {
                         return Promise.reject('An error occured when trying to delete this manifest');
@@ -249,7 +256,9 @@ function IndexDBStore() {
         getManifestByKey: getManifestByKey,
         storeFragment: storeFragment,
         storeManifest: storeManifest,
+        updateManifest: updateManifest,
         setFragmentStore: setFragmentStore,
+        setDownloadingStatus: setDownloadingStatus,
         countManifest: countManifest,
         getAllManifests: getAllManifests,
         dropFragmentStore: dropFragmentStore,

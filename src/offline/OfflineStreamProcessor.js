@@ -156,6 +156,7 @@ function OfflineStreamProcessor() {
 
         stop();
         logger.info('Stream is complete');
+        eventBus.trigger(Events.OFFLINE_STREAM_PROCESSOR_COMPLETED, {sender: this});
     }
 
     function stop() {
@@ -279,12 +280,11 @@ function OfflineStreamProcessor() {
                     fragmentModel.executeRequest(request);
                 }
             }
+            if (indexHandler.isMediaFinished(currentVoRepresentation) ) {
+                stop();
+            }
+            getAvailableSegmentsNumber();
         }
-
-        if (indexHandler.isMediaFinished(currentVoRepresentation) ) {
-            stop();
-        }
-        getAvailableSegmentsNumber();
     }
 
 
@@ -343,7 +343,7 @@ function OfflineStreamProcessor() {
     }
 
     function getAvailableSegmentsNumber() {
-        return voRepresentations.availableSegmentsNumber;
+        return getRepresentation().availableSegmentsNumber;
     }
 
     function getDownloadedSegments() {
@@ -359,7 +359,7 @@ function OfflineStreamProcessor() {
         mediaInfo = null;
         updating = false;
         realAdaptation = null;
-        currentVoRepresentation = null;
+        currentVoRepresentation = NaN;
         downloadedSegments = null;
         representation = null;
         type = null;
