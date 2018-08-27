@@ -151,7 +151,7 @@ function OfflineStream(config) {
         let mediaInfo = getMediaInfoForType(type, allMediaForType);
         return abrController.getBitrateList(mediaInfo);
     }
-//initializeSelectedMediaList
+
     function initializeAllMediaBitrateList(allMediaBitrateList) {
         allSelectedMediaBitrateList = allMediaBitrateList;
         initializeMedia(streamInfo);
@@ -259,7 +259,7 @@ function OfflineStream(config) {
         }
     }
 
-    function onStreamCompleted(e) {
+    function onStreamCompleted() {
         finishedOfflineStreamProcessors++;
         if (finishedOfflineStreamProcessors === offlineStreamProcessors.length) {
             eventBus.trigger(Events.DOWNLOADING_FINISHED, {sender: this, status: DOWNLOAD_FINISHED, message: 'Downloading has been successfully completed for this stream !'});

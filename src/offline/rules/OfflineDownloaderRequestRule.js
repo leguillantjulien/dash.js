@@ -29,21 +29,13 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 import Constants from './../../streaming/constants/Constants';
-import Debug from './../../core/Debug';
 import FactoryMaker from './../../core/FactoryMaker';
 import FragmentRequest from './../../streaming/vo/FragmentRequest';
 
 function OfflineDownloaderRequestRule() {
 
-    const context = this.context;
 
-    let instance,
-        logger;
-
-    function setup() {
-        logger = Debug(context).getInstance().getLogger(instance);
-    }
-
+    let instance;
 
     function execute(streamProcessor) {
         const mediaInfo = streamProcessor.getCurrentRepresentationInfo().mediaInfo;
@@ -76,7 +68,6 @@ function OfflineDownloaderRequestRule() {
         execute: execute
     };
 
-    setup();
 
     return instance;
 }

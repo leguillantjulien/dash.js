@@ -173,12 +173,10 @@ function OfflineController() {
                 const streamInfo = streamsInfo[i];
                 let stream = OfflineStream(context).create();
                 stream.setConfig({
-                    manifestUpdater: manifestUpdater,
                     dashManifestModel: dashManifestModel,
                     adapter: adapter,
                     errHandler: errHandler,
                     baseURLController: baseURLController,
-                    offlineController: instance,
                     abrController: abrController
                 });
                 stream.initialize(streamInfo);
