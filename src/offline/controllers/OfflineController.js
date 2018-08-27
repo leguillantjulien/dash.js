@@ -128,7 +128,6 @@ function OfflineController() {
         eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
         eventBus.on(Events.ORIGINAL_MANIFEST_LOADED, onOriginalManifestLoaded, instance);
         eventBus.on(Events.DOWNLOADING_STARTED, onDownloadingStarted, instance);
-        eventBus.on(Events.DOWNLOADING_STOPPED, onDownloadingStopped, instance);
         eventBus.on(Events.DOWNLOADING_FINISHED, onDownloadingFinished, instance);
         manifestLoader.load(url);
         isRecordingStatus = true;
@@ -153,12 +152,6 @@ function OfflineController() {
 
     function onDownloadingStarted(e) {
         if (!e.error && e.status) {
-            offlineStoreController.setDownloadingStatus(manifestId, e.status);
-        }
-    }
-
-    function onDownloadingStopped(e) {
-        if (!e.error && manifestId) {
             offlineStoreController.setDownloadingStatus(manifestId, e.status);
         }
     }
@@ -272,16 +265,20 @@ function OfflineController() {
     }
 
     function stopRecord() {
-        for (let i = 0, ln = streams.length; i < ln; i++) {
-            streams[i].stopOfflineStreamProcessors();
+        if (manifestId !== null && isRecording) {
+            for (let i = 0, ln = streams.length; i < ln; i++) {
+                streams[i].stopOfflineStreamProcessors();
+            }
+            offlineStoreController.setDownloadingStatus(manifestId, 'stopped');
+            eventBus.trigger(Events.DOWNLOADING_STOPPED, {sender: this, status: 'stopped', message: 'Downloading has been stopped for this stream !'});
         }
-        eventBus.trigger(Events.DOWNLOADING_STOPPED, {sender: this, status: 'stopped', message: 'Downloading has been stopped for this stream !'});
     }
 
     function deleteRecord(manifestId) {
 
         if (streams.length >= 1) {
             stopRecord();
+            isRecordingStatus = false;
         }
         return offlineStoreController.deleteManifestById(manifestId).then(function () {
             return Promise.resolve();
@@ -294,6 +291,7 @@ function OfflineController() {
         for (let i = 0, ln = streams.length; i < ln; i++) {
             streams[i].resumeOfflineStreamProcessors();
         }
+        isRecordingStatus = true;
     }
 
     function getRecordProgression() {
@@ -315,7 +313,6 @@ function OfflineController() {
         eventBus.off(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
         eventBus.off(Events.ORIGINAL_MANIFEST_LOADED, onOriginalManifestLoaded, instance);
         eventBus.off(Events.DOWNLOADING_STARTED, onDownloadingStarted, instance);
-        eventBus.off(Events.DOWNLOADING_STOPPED, onDownloadingStopped, instance);
         eventBus.off(Events.DOWNLOADING_FINISHED, onDownloadingFinished, instance);
     }
 

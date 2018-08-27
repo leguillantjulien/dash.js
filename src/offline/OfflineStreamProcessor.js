@@ -129,7 +129,7 @@ function OfflineStreamProcessor() {
         if (e.error && e.request.serviceLocation && !isStopped) {
             fragmentModel.executeRequest(e.request);
         }
-        //stop();
+
         download();
     }
 
@@ -206,9 +206,8 @@ function OfflineStreamProcessor() {
     }
 
     function getPeriodForStreamInfo(streamInfo, voPeriodsArray) {
-        const ln = voPeriodsArray.length;
 
-        for (let i = 0; i < ln; i++) {
+        for (let i = 0; i < voPeriodsArray.length; i++) {
             let voPeriod = voPeriodsArray[i];
 
             if (streamInfo.id === voPeriod.id) return voPeriod;
@@ -223,7 +222,6 @@ function OfflineStreamProcessor() {
         let id = mediaInfo ? mediaInfo.id : null;
 
         if (adapter.getVoPeriods().length > 0) {
-            abrController.updateTopQualityIndex(mediaInfo);
             realAdaptation = id ? dashManifestModel.getAdaptationForId(id, adapter.getVoPeriods()[0].mpd.manifest, selectedVoPeriod.index) : dashManifestModel.getAdaptationForIndex(mediaInfo.index, adapter.getVoPeriods()[0].mpd.manifest, selectedVoPeriod.index);
             updateRepresentation(realAdaptation, voAdaptation, type);
         } else {
@@ -268,22 +266,19 @@ function OfflineStreamProcessor() {
                     fragmentModel.executeRequest(request);
                 }
             }
-            if (indexHandler.isMediaFinished(currentVoRepresentation) ) {
-                stop();
-            }
-            getAvailableSegmentsNumber();
         }
     }
 
 
     function updateRepresentation(newRealAdaptation, voAdaptation, type) {
         const streamInfo = getStreamInfo();
+        //Si l'index de qualité n'est pas défini on télécharge par défaut à la meilleur qualité du streamInfo
         if (qualityIndex === null) {
             qualityIndex = abrController.getTopQualityIndexFor(type, streamInfo.id);
         }
         updating = true;
 
-        voRepresentations = updateRepresentations(voAdaptation);
+        voRepresentations = dashManifestModel.getRepresentationsForAdaptation(voAdaptation);
         currentVoRepresentation = voRepresentations[qualityIndex] !== undefined ? voRepresentations[qualityIndex] : voRepresentations[voRepresentations.length - 1];
         realAdaptation = newRealAdaptation;
 
@@ -300,10 +295,6 @@ function OfflineStreamProcessor() {
 
         representation = e.representation;
         eventBus.trigger(Events.DATA_UPDATE_COMPLETED, {sender: this, data: realAdaptation, currentRepresentation: currentVoRepresentation});
-    }
-
-    function updateRepresentations(voAdaptation) {
-        return dashManifestModel.getRepresentationsForAdaptation(voAdaptation);
     }
 
     function getRepresentation() {
