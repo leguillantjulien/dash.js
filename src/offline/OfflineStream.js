@@ -113,7 +113,7 @@ function OfflineStream(config) {
         initializeMediaBitrate(streamInfo);
         setAvailableSegments();
         eventBus.on(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, this);
-        eventBus.on(Events.OFFLINE_STREAM_PROCESSOR_COMPLETED, onOfflineStreamProcessorCompleted, this);
+        eventBus.on(Events.STREAM_COMPLETED, onStreamCompleted, this);
     }
 
     function initializeMediaBitrate(streamInfo) {
@@ -222,7 +222,7 @@ function OfflineStream(config) {
     }
 
     function createOfflineStreamProcessor(mediaInfo, allMediaForType, optionalSettings) {
-        let offlineStreamProcessor = OfflineStreamProcessor(context).create();
+        offlineStreamProcessor = OfflineStreamProcessor(context).create();
         offlineStreamProcessor.setConfig({
             type: mediaInfo.type,
             mimeType: mediaInfo.mimeType,
@@ -259,11 +259,7 @@ function OfflineStream(config) {
         }
     }
 
-    function onOfflineStreamProcessorCompleted(e) {
-        let sp = e.sender.getStreamProcessor();
-        if (sp.getStreamInfo() !== streamInfo) {
-            return;
-        }
+    function onStreamCompleted(e) {
         finishedOfflineStreamProcessors++;
         if (finishedOfflineStreamProcessors === offlineStreamProcessors.length) {
             eventBus.trigger(Events.DOWNLOADING_FINISHED, {sender: this, status: DOWNLOAD_FINISHED, message: 'Downloading has been successfully completed for this stream !'});
@@ -345,7 +341,6 @@ function OfflineStream(config) {
         resetInitialSettings();
 
         eventBus.off(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, this);
-        eventBus.off(Events.OFFLINE_STREAM_PROCESSOR_COMPLETED, onOfflineStreamProcessorCompleted, this);
     }
 
     instance = {
