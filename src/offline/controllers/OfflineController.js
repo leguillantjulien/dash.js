@@ -219,9 +219,9 @@ function OfflineController() {
         }
     }
 
-    function setSelectedMediaInfosForOfflineStream(allSelectedMediaInfos) {
+    function initializeAllMediaBitrateList(allSelectedMediaInfos) {
         for (let i = 0; i < streams.length; i++) {
-            streams[i].setSelectedMediaInfosForOfflineStream(allSelectedMediaInfos);
+            streams[i].initializeAllMediaBitrateList(allSelectedMediaInfos);
         }
     }
 
@@ -231,7 +231,7 @@ function OfflineController() {
                 manifestId = mId;
                 setFragmentStore(manifestId);
             }).then(function () {
-                setSelectedMediaInfosForOfflineStream(allSelectedMediaInfos);
+                initializeAllMediaBitrateList(allSelectedMediaInfos);
                 generateOfflineManifest(XMLManifest, allSelectedMediaInfos, manifestId);
             });
         } catch (err) {

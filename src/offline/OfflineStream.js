@@ -151,8 +151,8 @@ function OfflineStream(config) {
         let mediaInfo = getMediaInfoForType(type, allMediaForType);
         return abrController.getBitrateList(mediaInfo);
     }
-
-    function setSelectedMediaInfosForOfflineStream(allMediaBitrateList) {
+//initializeSelectedMediaList
+    function initializeAllMediaBitrateList(allMediaBitrateList) {
         allSelectedMediaBitrateList = allMediaBitrateList;
         initializeMedia(streamInfo);
         setAvailableSegments();
@@ -351,7 +351,7 @@ function OfflineStream(config) {
     instance = {
         initialize: initialize,
         setConfig: setConfig,
-        setSelectedMediaInfosForOfflineStream: setSelectedMediaInfosForOfflineStream,
+        initializeAllMediaBitrateList: initializeAllMediaBitrateList,
         offlineStreamProcessor: offlineStreamProcessor,
         getFragmentController: getFragmentController,
         getStreamInfo: getStreamInfo,
