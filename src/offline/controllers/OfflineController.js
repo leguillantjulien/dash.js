@@ -38,7 +38,6 @@ import BaseURLController from './../../streaming/controllers/BaseURLController';
 import OfflineStoreController from './OfflineStoreController';
 import OfflineStream from '../OfflineStream';
 import OfflineIndexDBManifestParser from '../utils/OfflineIndexDBManifestParser';
-import URLUtils from './../../streaming/utils/URLUtils';
 
 function OfflineController() {
 
@@ -62,7 +61,6 @@ function OfflineController() {
         logger;
 
     const eventBus = EventBus(context).getInstance();
-    const urlUtils = URLUtils(context).getInstance();
 
     function setup() {
         manifestUpdater = ManifestUpdater(context).create();
@@ -194,11 +192,9 @@ function OfflineController() {
     }
 
     function onOriginalManifestLoaded(e) {
-        if (!urlUtils.isOfflineURL(manifest.url)) {
             eventBus.on(Events.FRAGMENT_LOADING_COMPLETED, storeFragment, instance);
             XMLManifest = e.originalManifest;
         }
-    }
 
     function initializeAllMediaBitrateList(allSelectedMediaInfos) {
         for (let i = 0; i < streams.length; i++) {
