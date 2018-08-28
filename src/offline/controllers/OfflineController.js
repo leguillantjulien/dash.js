@@ -112,6 +112,12 @@ function OfflineController() {
         manifestUpdater.initialize();
     }
 
+    /**
+     * méthode appelée par le mediaPlayer, télécharge un stream à partir de l'url du manifest.
+     * @param {string} url
+     * @memberof module:offline
+     * @instance
+    */
     function record(url) {
         eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
         eventBus.on(Events.ORIGINAL_MANIFEST_LOADED, onOriginalManifestLoaded, instance);
@@ -121,6 +127,12 @@ function OfflineController() {
         isRecordingStatus = true;
     }
 
+    /**
+     *Boolean utilisé pour vérifier si le controlleur télécharge un stream.
+     * @memberof module:offline
+     * @return {boolean}
+     * @instance
+    */
     function isRecording() {
         return isRecordingStatus;
     }
@@ -151,6 +163,11 @@ function OfflineController() {
         resetRecord();
     }
 
+    /**
+     *Créé et compose un stream pour chaque type de streamInfo.
+     * @memberof module:offline
+     * @instance
+    */
     function composeStreams() {
         try {
             const streamsInfo = adapter.getStreamsInfo();
@@ -183,25 +200,53 @@ function OfflineController() {
         }
     }
 
+    /**
+     * Créé une instance localforage pour stocker les nouveaux fragments du stream en BD.
+     * @param {number} manifestId
+     * @memberof module:offline
+     * @instance
+    */
     function setFragmentStore(manifestId) {
         return offlineStoreController.setFragmentStore('manifest_' + manifestId);
     }
 
+    /**
+     * Stock dans le tableau de manifests le manifest compatible hors ligne.
+     * @param {object} offlineManifest
+     * @memberof module:offline
+     * @instance
+    */
     function storeOfflineManifest(offlineManifest) {
         offlineStoreController.storeOfflineManifest(offlineManifest);
     }
 
+    /**
+     * Evenement intercepté lorsque le manifest XML est téléchargé, dans le but de le rendre compatible hors ligne.
+     * @param {Object[]} e
+    */
     function onOriginalManifestLoaded(e) {
-            eventBus.on(Events.FRAGMENT_LOADING_COMPLETED, storeFragment, instance);
-            XMLManifest = e.originalManifest;
-        }
+        eventBus.on(Events.FRAGMENT_LOADING_COMPLETED, storeFragment, instance);
+        XMLManifest = e.originalManifest;
+    }
 
+    /**
+     * Initialise la qualité des mediaInfos remontée par l'utilisateur (bitrates).
+     * @param {Object[]} allSelectedMediaInfos
+     * @memberof module:offline
+     * @instance
+    */
     function initializeAllMediaBitrateList(allSelectedMediaInfos) {
         for (let i = 0; i < streams.length; i++) {
             streams[i].initializeAllMediaBitrateList(allSelectedMediaInfos);
         }
     }
 
+    /**
+     * Initialise le téléchargement et la génération du manifest hors ligne.
+     * @param {Object[]} allSelectedMediaInfos
+     * @memberof module:offline
+     * @instance
+    */
     function initializeDownload(allSelectedMediaInfos) {
         try {
             generateManifestId().then(function (manifestId) {
@@ -215,6 +260,15 @@ function OfflineController() {
         }
     }
 
+    /**
+     * Créer le parser chargé de convertir le manifest original en manifest hors ligne
+     * Remonte un objet JSON contenant les informations à stocker en base de données
+     * @param {string} XMLManifest
+     * @param {Object[]} allSelectedMediaInfos
+     * @param {number} manifestId
+     * @memberof module:offline
+     * @instance
+    */
     function generateOfflineManifest(XMLManifest, allSelectedMediaInfos, manifestId) {
         let parser = OfflineIndexDBManifestParser(context).create({
             allMediaInfos: allSelectedMediaInfos
@@ -234,19 +288,38 @@ function OfflineController() {
             } else {
                 throw new Error('falling parsing offline manifest');
             }
+        }).catch(function (err) {
+            throw new Error(err);
         });
     }
 
+    /**
+     * Génère le manifestId du stream à partir du nombre de manifests
+     * @memberof module:offline
+     * @returns {number}
+     * @instance
+    */
     function generateManifestId() {
         return offlineStoreController.countManifest().then(function (count) {
             return count + 1;
         });
     }
 
+    /**
+     * Remonte un tableau de manifests
+     * @memberof module:offline
+     * @returns {array}
+     * @instance
+    */
     function getAllRecords() {
         return offlineStoreController.getAllManifests();
     }
 
+    /**
+     * Stop le téléchargement de fragmentq puis change l'état du stream en BD.
+     * @memberof module:offline
+     * @instance
+    */
     function stopRecord() {
         if (manifestId !== null && isRecording) {
             for (let i = 0, ln = streams.length; i < ln; i++) {
@@ -257,6 +330,12 @@ function OfflineController() {
         }
     }
 
+    /**
+     * Supprime l'enregistrement du stream
+     * @memberof module:offline
+     * @param {number} manifestId
+     * @instance
+    */
     function deleteRecord(manifestId) {
 
         if (streams.length >= 1) {
@@ -270,14 +349,25 @@ function OfflineController() {
         });
     }
 
+    /**
+     * Reprend le téléchargement d'un stream s'il y en a un en cours.
+     * @memberof module:offline
+     * @instance
+    */
     function resumeRecord() {
         if (isRecording()) {
-        for (let i = 0, ln = streams.length; i < ln; i++) {
-            streams[i].resumeOfflineStreamProcessors();
-        }
+            for (let i = 0, ln = streams.length; i < ln; i++) {
+                streams[i].resumeOfflineStreamProcessors();
+            }
         }
     }
 
+
+    /**
+     * Obtient le progression du nombre de fragments téléchargés.
+     * @memberof module:offline
+     * @instance
+    */
     function getRecordProgression() {
         let globalProgression = 0;
         for (let i = 0, ln = streams.length; i < ln; i++) {
@@ -286,6 +376,11 @@ function OfflineController() {
         return Math.round(globalProgression * 100);
     }
 
+    /**
+     * Reset les écouteurs d'évenements et des streams à la fin d'un téléchargement.
+     * @memberof module:offline
+     * @instance
+    */
     function resetRecord() {
         for (let i = 0, ln = streams.length; i < ln; i++) {
             streams[i].reset();
@@ -300,6 +395,11 @@ function OfflineController() {
         eventBus.off(Events.DOWNLOADING_FINISHED, onDownloadingFinished, instance);
     }
 
+    /**
+     * Reset les dépendances de l'instance
+     * @memberof module:offline
+     * @instance
+    */
     function reset() {
         if (isRecording()) {
             resetRecord();
