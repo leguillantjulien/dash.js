@@ -74,15 +74,6 @@ function OfflineController() {
         isRecordingStatus = false;
     }
 
-
-    function onManifestLoaded(e) {
-        if (e.manifest !== null) {
-            manifest = e.manifest;
-        } else {
-            throw new Error('onManifestLoaded failed');
-        }
-    }
-
     function setConfig(config) {
         if (!config) return;
 
@@ -124,7 +115,6 @@ function OfflineController() {
     }
 
     function record(url) {
-        eventBus.on(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, instance);
         eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
         eventBus.on(Events.ORIGINAL_MANIFEST_LOADED, onOriginalManifestLoaded, instance);
         eventBus.on(Events.DOWNLOADING_STARTED, onDownloadingStarted, instance);
@@ -307,7 +297,7 @@ function OfflineController() {
         isRecordingStatus = false;
         streams = [];
         manifestId = null;
-        eventBus.off(Events.INTERNAL_MANIFEST_LOADED, onManifestLoaded, instance);
+        eventBus.off(Events.FRAGMENT_LOADING_COMPLETED, storeFragment, instance);
         eventBus.off(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
         eventBus.off(Events.ORIGINAL_MANIFEST_LOADED, onOriginalManifestLoaded, instance);
         eventBus.off(Events.DOWNLOADING_STARTED, onDownloadingStarted, instance);
