@@ -187,8 +187,8 @@ function OfflineController() {
         return offlineStoreController.setFragmentStore('manifest_' + manifestId);
     }
 
-    function storeOfflineManifest(encodedManifest) {
-        offlineStoreController.storeOfflineManifest(encodedManifest);
+    function storeOfflineManifest(offlineManifest) {
+        offlineStoreController.storeOfflineManifest(offlineManifest);
     }
 
     function onOriginalManifestLoaded(e) {
@@ -204,12 +204,11 @@ function OfflineController() {
 
     function initializeDownload(allSelectedMediaInfos) {
         try {
-            generateManifestId().then(function (mId) {
-                manifestId = mId;
+            generateManifestId().then(function (manifestId) {
                 setFragmentStore(manifestId);
+                generateOfflineManifest(XMLManifest, allSelectedMediaInfos, manifestId);
             }).then(function () {
                 initializeAllMediaBitrateList(allSelectedMediaInfos);
-                generateOfflineManifest(XMLManifest, allSelectedMediaInfos, manifestId);
             });
         } catch (err) {
             throw new Error(err);
@@ -272,10 +271,11 @@ function OfflineController() {
     }
 
     function resumeRecord() {
+        if (isRecording()) {
         for (let i = 0, ln = streams.length; i < ln; i++) {
             streams[i].resumeOfflineStreamProcessors();
         }
-        isRecordingStatus = true;
+        }
     }
 
     function getRecordProgression() {
