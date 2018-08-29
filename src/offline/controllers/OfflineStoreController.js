@@ -58,31 +58,45 @@ function OfflineStoreController() {
     }
 
     function storeFragment(fragmentId, fragmentData) {
-        indexDBStore.storeFragment(fragmentId, fragmentData);
+        indexDBStore.storeFragment(fragmentId, fragmentData).catch(function (err) {
+            errHandler.indexedDBError(err);
+        });
     }
 
     function storeOfflineManifest(manifest) {
-        indexDBStore.storeManifest(manifest);
+        return indexDBStore.storeManifest(manifest).catch(function (err) {
+            errHandler.indexedDBError(err);
+        });
     }
 
     function getCurrentHigherManifestId() {
-        return indexDBStore.getCurrentHigherManifestId();
+        return indexDBStore.getCurrentHigherManifestId().catch(function (err) {
+            errHandler.indexedDBError(err);
+        });
     }
 
     function getAllManifests() {
-        return indexDBStore.getAllManifests();
+        return indexDBStore.getAllManifests().catch(function (err) {
+            errHandler.indexedDBError(err);
+        });
     }
 
     function deleteRecordById(manifestId) {
-        return indexDBStore.deleteRecordById(manifestId);
+        return indexDBStore.deleteRecordById(manifestId).catch(function (err) {
+            errHandler.indexedDBError(err);
+        });
     }
 
     function isFragmentStoreInitialized() {
-        return indexDBStore.isFragmentStoreInitialized();
+        return indexDBStore.isFragmentStoreInitialized().catch(function (err) {
+            errHandler.indexedDBError(err);
+        });
     }
 
     function setDownloadingStatus(manifestId, status) {
-        indexDBStore.setDownloadingStatus(manifestId, status);
+        indexDBStore.setDownloadingStatus(manifestId, status).catch(function (err) {
+            errHandler.indexedDBError(err);
+        });
     }
 
     instance = {
