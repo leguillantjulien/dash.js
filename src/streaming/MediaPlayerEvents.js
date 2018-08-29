@@ -81,6 +81,11 @@ class MediaPlayerEvents extends EventsBase {
         this.ERROR = 'error';
 
 
+        /* Triggered when the downloading is initialize and started
+        * @event MediaPlayerEvents#DOWNLOADING_STOPPED
+        */
+        this.DOWNLOADING_STARTED = 'downloadingStarted';
+
         /**
          * Triggered when the user stop current downloading
          * @event MediaPlayerEvents#DOWNLOADING_STOPPED

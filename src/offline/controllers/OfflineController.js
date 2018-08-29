@@ -156,13 +156,13 @@ function OfflineController() {
     }
 
     function onDownloadingStarted(e) {
-        if (!e.error && e.status) {
+        if (!e.error && manifestId != null) {
             offlineStoreController.setDownloadingStatus(manifestId, e.status);
         }
     }
 
     function onDownloadingFinished(e) {
-        if (!e.error && manifestId) {
+        if (!e.error && manifestId != null) {
             offlineStoreController.setDownloadingStatus(manifestId, e.status);
         }
         resetRecord();

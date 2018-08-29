@@ -793,7 +793,18 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
     // Offline
     //
     ////////////////////////////////////////
+      //Init
     $(".progress").hide();
+    $(".stopDownload").hide();
+    $(".resumeDownload").hide();
+
+
+    $scope.player.on(dashjs.MediaPlayer.events.DOWNLOADING_STARTED, function (e) { /* jshint ignore:line */
+        $scope.updateRecordProgression();
+        $(".progress").show();
+        $(".stopDownload").show();
+        $(".resumeDownload").show();
+    }, $scope);
 
     $scope.player.on(dashjs.MediaPlayer.events.DOWNLOADING_FINISHED, function (e) { /* jshint ignore:line */
         $scope.successMessage  = e.message;
@@ -831,8 +842,6 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
 
         if (allSelectedMediaInfos.length >= 1) {
             $scope.player.initializeDownload(JSON.parse(JSON.stringify(allSelectedMediaInfos)));
-            $scope.updateRecordProgression();
-            $(".progress").show();
         } else {
             alert('You must select at least 1 quality !');
         }
@@ -850,7 +859,6 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
 
     $scope.doResumeDownload = function () {
         $scope.player.resumeRecord();
-        $scope.updateRecordProgression();
     }
 
     $scope.updateRecordProgression = function () {

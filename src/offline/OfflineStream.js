@@ -50,8 +50,6 @@ function OfflineStream(config) {
     const context = this.context;
     const eventBus = EventBus(context).getInstance();
 
-    const DOWNLOAD_FINISHED = 'finished';
-
     let instance,
         adapter,
         abrController,
@@ -59,6 +57,7 @@ function OfflineStream(config) {
         dashManifestModel,
         offlineStreamProcessor,
         offlineStreamProcessors,
+        startedOfflineStreamProcessors,
         finishedOfflineStreamProcessors,
         errHandler,
         streamInfo,
@@ -81,6 +80,7 @@ function OfflineStream(config) {
         availableSegments = 0;
         streamInfo = null;
         offlineStreamProcessors = [];
+        startedOfflineStreamProcessors = 0;
         finishedOfflineStreamProcessors = 0;
         allMediasBitratesList = [];
     }
@@ -315,7 +315,7 @@ function OfflineStream(config) {
     function onStreamCompleted() {
         finishedOfflineStreamProcessors++;
         if (finishedOfflineStreamProcessors === offlineStreamProcessors.length) {
-            eventBus.trigger(Events.DOWNLOADING_FINISHED, {sender: this, status: DOWNLOAD_FINISHED, message: 'Downloading has been successfully completed for this stream !'});
+            eventBus.trigger(Events.DOWNLOADING_FINISHED, {sender: this, status: 'finished', message: 'Downloading has been successfully completed for this stream !'});
         }
     }
 
@@ -326,6 +326,14 @@ function OfflineStream(config) {
         }
 
         sp.start();
+        checkIfAllOfflineStreamProcessorsStarted();
+    }
+
+    function checkIfAllOfflineStreamProcessorsStarted() {
+        startedOfflineStreamProcessors++;
+        if (startedOfflineStreamProcessors === offlineStreamProcessors.length) {
+            eventBus.trigger(Events.DOWNLOADING_STARTED, {sender: this, status: 'started', message: 'Downloading has been successfully started for this stream !'});
+        }
     }
 
     function getStreamInfo() {
