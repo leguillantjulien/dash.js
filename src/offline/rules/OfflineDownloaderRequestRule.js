@@ -32,11 +32,22 @@ import Constants from './../../streaming/constants/Constants';
 import FactoryMaker from './../../core/FactoryMaker';
 import FragmentRequest from './../../streaming/vo/FragmentRequest';
 
+/**
+ * @module OfflineDownloaderRequestRule
+ * @description Manages HTTP segments request.
+ */
 function OfflineDownloaderRequestRule() {
 
 
     let instance;
 
+    /**
+     * Génére des requêtes tant que la représentation n'est pas terminé.
+     * Fonctionnement allégé du nextFragmmentRequestRule.
+     * @param {object} OfflineStreamProcessor
+     * @returns {request|null}
+     * @instance
+    */
     function execute(OfflineStreamProcessor) {
         const mediaInfo = OfflineStreamProcessor.getCurrentRepresentationInfo().mediaInfo;
         const mediaType = mediaInfo.type;

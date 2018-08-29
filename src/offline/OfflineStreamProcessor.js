@@ -38,6 +38,10 @@ import OfflineDownloaderRequestRule from './rules/OfflineDownloaderRequestRule';
 import MetricsModel from './../streaming/models/MetricsModel';
 import TimelineConverter from './../dash/utils/TimelineConverter';
 
+/**
+ * @module  OfflineStreamProcessor
+ * @description Arrange downloading for each type
+ */
 function OfflineStreamProcessor() {
 
     let context = this.context;
@@ -144,6 +148,10 @@ function OfflineStreamProcessor() {
         logger.info('Stream is complete');
     }
 
+    /**
+     * Pause temporairement le téléchargement de fragments
+     * @memberof OfflineStreamProcessor#
+     */
     function stop() {
         if (isStopped) {
             return;
@@ -151,11 +159,19 @@ function OfflineStreamProcessor() {
         isStopped = true;
     }
 
+    /**
+     * Redémarre le téléchargement de fragments la ou l'OfflineStreamProcessor c'est arrêté
+     * @memberof OfflineStreamProcessor#
+     */
     function resume() {
         isStopped = false;
         download();
     }
 
+    /**
+     * Créer les dépendances et initialise l'OfflineStreamProcessor
+     * @memberof OfflineStreamProcessor#
+    */
     function initialize() {
 
         indexHandler = DashHandler(context).create({
@@ -188,6 +204,7 @@ function OfflineStreamProcessor() {
         return fragmentModel;
     }
 
+    //repris du streamProcessor
     function addMediaInfo(newMediaInfo, selectNewMediaInfo) {
 
         if (selectNewMediaInfo) {
@@ -211,6 +228,10 @@ function OfflineStreamProcessor() {
         }
     }
 
+    /**
+     * Créer et exécute la première requête de la représentation
+     * @memberof OfflineStreamProcessor#
+    */
     function getInitRequest() {
         if (!representation) return null;
         let initRequest = indexHandler.getInitRequest(representation);
@@ -218,11 +239,21 @@ function OfflineStreamProcessor() {
     }
 
 
+    /**
+     * Methode mocké ...
+     * @param {any} time
+     * @memberof OfflineStreamProcessor#
+    */
     function timeIsBuffered(time) {
         if (time !== undefined) {
             return true;
         }
     }
+
+    /**
+     * Méthode appelée pour démarrer le téléchargement si une représentation existe.
+     * @memberof OfflineStreamProcessor#
+    */
     function start() {
         if (!currentVoRepresentation) {
             throw new Error('Start denied to OfflineStreamProcessor');
@@ -231,6 +262,10 @@ function OfflineStreamProcessor() {
         download();
     }
 
+    /**
+     * Téléchargement des fragments associés au type du OfflineStreamProcessor
+     * @memberof OfflineStreamProcessor#
+    */
     function download() {
         if (isStopped) {
             return;
@@ -251,6 +286,12 @@ function OfflineStreamProcessor() {
         }
     }
 
+    /**
+     * Téléchargement des fragments associés au type du OfflineStreamProcessor
+     * @param {Object} voAdaptation - adaptation
+     * @param {string} type du média
+     * @memberof OfflineStreamProcessor#
+    */
     function updateRepresentation(voAdaptation, type) {
         const streamInfo = getStreamInfo();
         //Si l'index de qualité n'est pas défini on télécharge par défaut à la meilleur qualité du streamInfo
@@ -270,6 +311,7 @@ function OfflineStreamProcessor() {
         indexHandler.updateRepresentation(currentVoRepresentation, true); //update uniquement la représentation pour la qualité choisie
     }
 
+    //Evenement intercepté lorsque la représentation est prête
     function onRepresentationUpdated(e) {
         if (e.sender.getStreamProcessor() !== instance || !isUpdating()) return;
 
@@ -323,6 +365,10 @@ function OfflineStreamProcessor() {
         stream = null;
     }
 
+    /**
+     * Reset des écouteurs d'évenement et des dépendances
+     * @memberof OfflineStreamProcessor#
+    */
     function reset() {
         resetInitialSettings();
         indexHandler.reset();

@@ -39,7 +39,11 @@ import OfflineStreamProcessor from './OfflineStreamProcessor';
 import Constants from './../streaming/constants/Constants';
 import RequestModifier from './../streaming/utils/RequestModifier';
 
-
+/**
+ * @module  OfflineStream
+ * @description Initialize and Manage Stream for each type
+ * @param {Object} config - dependences
+ */
 function OfflineStream(config) {
 
     config = config || {};
@@ -69,6 +73,9 @@ function OfflineStream(config) {
         Events.extend(OfflineEvents);
     }
 
+    /**
+     * Reset les variables du OfflineStream
+     */
     function resetInitialSettings() {
         offlineStreamProcessors = [];
         availableSegments = 0;
@@ -103,6 +110,10 @@ function OfflineStream(config) {
 
     }
 
+    /**
+     * Initialise le streamInfo ainsi que les dépendences de l'OfflineStream
+     * @param {Object} initStreamInfo
+     */
     function initialize(initStreamInfo) {
         streamInfo = initStreamInfo;
         fragmentController = FragmentController(context).create({
@@ -116,6 +127,10 @@ function OfflineStream(config) {
         eventBus.on(Events.STREAM_COMPLETED, onStreamCompleted, this);
     }
 
+    /**
+     * Créer la liste des bandes passantes de chaque type du streamInfo
+     * @param {Object} streamInfo
+     */
     function getMediaBitrate(streamInfo) {
         let availableBitRateList = [];
         if (getBitrateListForType(Constants.VIDEO, streamInfo) !== null) {
@@ -146,18 +161,31 @@ function OfflineStream(config) {
         });
     }
 
+    /**
+     * Retourne la liste des bandes passantes pour le type passé en paramètre
+     * @param {string} type
+     * @param {Object} streamInfo
+     */
     function getBitrateListForType(type, streamInfo) {
         const allMediaForType =  adapter.getAllMediaInfoForType(streamInfo, type);
         let mediaInfo = getMediaInfoForType(type, allMediaForType);
         return abrController.getBitrateList(mediaInfo);
     }
 
+    /**
+     * initialise le stream avec les bandes passantes choisies par l'utilisateur
+     * @param {Object} mediasBitratesList
+     */
     function initializeAllMediasBitratesList(mediasBitratesList) {
         allMediasBitratesList = mediasBitratesList;
         initializeMedia(streamInfo);
         setAvailableSegments();
     }
 
+    /**
+     * initialise le média pour chaque type
+     * @param {Object} streamInfo
+     */
     function initializeMedia(streamInfo) {
         initializeMediaForType(Constants.VIDEO,streamInfo);
         initializeMediaForType(Constants.AUDIO,streamInfo);
@@ -168,6 +196,11 @@ function OfflineStream(config) {
         initializeMediaForType(Constants.IMAGE,streamInfo);
     }
 
+    /**
+     * Créer un offlineStreamProcessor si le type existe dans le streamInfo
+     * @param {string} type
+     * @param {Object} streamInfo
+     */
     function initializeMediaForType(type, streamInfo) {
         const allMediaForType = adapter.getAllMediaInfoForType(streamInfo, type);
         let mediaInfo = getMediaInfoForType(type, allMediaForType);
@@ -185,6 +218,11 @@ function OfflineStream(config) {
         }
         return mediaInfo;
     }
+    /**
+     * Retourne le bitrate correspondant au type du mediaInfo
+     * @param {string} type
+     * @returns {number|null} bitrateForType
+     */
     function getBitrateForType(type) {
         let currentMediaBitrate,
             bitrateForType;
@@ -199,7 +237,12 @@ function OfflineStream(config) {
         return bitrateForType;
     }
 
-
+    /**
+     * Retourne le mediaInfo correspondant au type s'il existe
+     * @param {string} type
+     * @param {Array} allMediaForType
+     * @returns {Object|null} mediaInfo
+     */
     function getMediaInfoForType(type, allMediaForType) {
         let mediaInfo = null;
 
@@ -214,10 +257,20 @@ function OfflineStream(config) {
         return mediaInfo;
     }
 
+    /**
+     * Retourne le fragmentController de l'instance
+     * Utilisé par le OfflineStreamProcessor
+     */
     function getFragmentController() {
         return fragmentController;
     }
 
+    /**
+     * Création du streamProcessor en charge d'ordonner et de télécharger les fragments pour un type de média
+     * @param {Object} mediaInfo
+     * @param {Array} allMediaForType
+     * @param {Object} optionalSettings
+     */
     function createOfflineStreamProcessor(mediaInfo, allMediaForType, optionalSettings) {
         offlineStreamProcessor = OfflineStreamProcessor(context).create();
         offlineStreamProcessor.setConfig({
@@ -256,6 +309,9 @@ function OfflineStream(config) {
         }
     }
 
+    /**
+     * Déclenche un évenement lors la totalité des offlineStreamProcessors ont fini
+     */
     function onStreamCompleted() {
         finishedOfflineStreamProcessors++;
         if (finishedOfflineStreamProcessors === offlineStreamProcessors.length) {
@@ -284,27 +340,40 @@ function OfflineStream(config) {
         return streamInfo ? streamInfo.duration : NaN;
     }
 
+    /**
+     * Stop le téléchargement de fragments de chaque processor
+     */
     function stopOfflineStreamProcessors() {
         for (let i = 0; i < offlineStreamProcessors.length; i++) {
             offlineStreamProcessors[i].stop();
         }
     }
 
+    /**
+     * Reprend le téléchargement de fragments de chaque processor
+     */
     function resumeOfflineStreamProcessors() {
         for (let i = 0; i < offlineStreamProcessors.length; i++) {
             offlineStreamProcessors[i].resume();
         }
     }
 
+    /**
+     * Retourne le nombre de segments téléchargés / nombre total de segments
+     * @returns {number} recordProgression
+     */
     function getRecordProgression() {
         let getDownloadedSegments = 0;
 
         for (let i = 0; i < offlineStreamProcessors.length; i++) {
             getDownloadedSegments = getDownloadedSegments + offlineStreamProcessors[i].getDownloadedSegments();
         }
-        return getDownloadedSegments / getAvailableSegments();
+        return getDownloadedSegments / availableSegments;
     }
 
+    /**
+     * Initialise le nombre total de segments du streamInfo
+     */
     function setAvailableSegments() {
         //TODO compter par taille de segments et non par le nombre
         for (let i = 0; i < offlineStreamProcessors.length; i++) {
@@ -316,6 +385,9 @@ function OfflineStream(config) {
         }
     }
 
+    /**
+     * Reset certains composants de l'OfflineStream
+     */
     function deactivate() {
         let ln = offlineStreamProcessors ? offlineStreamProcessors.length : 0;
         for (let i = 0; i < ln; i++) {
@@ -325,6 +397,9 @@ function OfflineStream(config) {
         }
     }
 
+    /**
+     * Reset la totalité de l'OfflineStream
+     */
     function reset() {
         stopOfflineStreamProcessors();
         if (fragmentController) {

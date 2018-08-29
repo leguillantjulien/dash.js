@@ -29,21 +29,21 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  */
 import FactoryMaker from './../../core/FactoryMaker';
-import Debug from './../../core/Debug';
 const localforage = require('localforage');
 const entities = require('html-entities').XmlEntities;
 
+/**
+ * @module  IndexDBStore
+ * @description IndexedDB Access
+ */
 function IndexDBStore() {
 
-    const context = this.context;
     let instance,
-        logger,
         manifestStore,
         isFragmentStoreInit,
         fragmentStore;
 
     function setup() {
-        logger = Debug(context).getInstance().getLogger(instance);
         fragmentStore = null;
         isFragmentStoreInit = false;
 
@@ -66,6 +66,12 @@ function IndexDBStore() {
     //
     ////////////////////////////////////////
 
+    /**
+     * Créer une instance localforage indexedDB afin de stocker les fragments téléchargés.
+     * @param {string} storeName
+     * @memberof module:IndexDBStore
+     * @instance
+    */
     function setFragmentStore(storeName) {
         console.log('setStore  ' + storeName);
         fragmentStore = localforage.createInstance({
@@ -77,10 +83,24 @@ function IndexDBStore() {
         isFragmentStoreInit = true;
     }
 
+    /**
+     * Retourne un boolean permettant de connaitre l'état d'initialisation du fragmentStore.
+     * @memberof module:IndexDBStore
+     * @returns {boolean} isFragmentStoreInit
+     * @instance
+    */
     function isFragmentStoreInitialized() {
         return isFragmentStoreInit;
     }
 
+    /**
+     * MaJ le status du téléchargement de l'enregistrement
+     * @memberof module:IndexDBStore
+     * @param {number} manifestId
+     * @param {string} newStatus
+     * @returns {boolean} isFragmentStoreInit
+     * @instance
+    */
     function setDownloadingStatus(manifestId, newStatus) {
         return getManifestById(manifestId).then(function (item) {
             item.status = newStatus;
@@ -88,6 +108,13 @@ function IndexDBStore() {
         });
     }
 
+    /**
+     * Retourne un fragment à partir de sa clé (id)
+     * @memberof module:IndexDBStore
+     * @param {number} key
+     * @returns {Promise} fragment
+     * @instance
+    */
     function getFragmentByKey(key) {
         return fragmentStore.getItem(key).then(function (value) {
             //console.log('getFragmentByKey => ' + value);
@@ -98,6 +125,13 @@ function IndexDBStore() {
 
     }
 
+    /**
+     * Permet d'obtenir un manifest à partir de son id
+     * @memberof module:IndexDBStore
+     * @param {number} id
+     * @returns {Promise} {Object[]} manifests
+     * @instance
+    */
     function getManifestById(id) {
         return getAllManifests().then(function (array) {
             if (array) {
@@ -121,6 +155,12 @@ function IndexDBStore() {
         });
     }
 
+    /**
+     * Retourne le tableau des manifests
+     * @memberof module:IndexDBStore
+     * @returns {Promise} {Object[]} manifests
+     * @instance
+    */
     function getAllManifests() {
         return manifestStore.getItem('manifest').then(function (array) {
             return Promise.resolve(array ? array : { 'manifests': [] });
@@ -129,6 +169,12 @@ function IndexDBStore() {
         });
     }
 
+    /**
+     * Retourne l'id du manifest le plus élevé
+     * @memberof module:IndexDBStore
+     * @returns {Promise} number
+     * @instance
+    */
     function getCurrentHigherManifestId() {
         return getAllManifests().then(function (array) {
             let higherManifestId = 0;
@@ -147,6 +193,13 @@ function IndexDBStore() {
         });
     }
 
+    /**
+     * MaJ le manifest
+     * @memberof module:IndexDBStore
+     * @param {Object} manifest à jour
+     * @returns {Promise} Object promise de l'action
+     * @instance
+    */
     function updateManifest(manifest) {
         return getAllManifests().then(function (array) {
             try {
@@ -162,6 +215,12 @@ function IndexDBStore() {
         });
     }
 
+    /**
+     * Stock un manifest dans le tableau des manifests
+     * @memberof module:IndexDBStore
+     * @param {Object} manifest
+     * @instance
+    */
     function storeManifest(manifest) {
         manifestStore.getItem('manifest').then(function (results) {
             let array = results ? results : { 'manifests': [] };
@@ -170,6 +229,14 @@ function IndexDBStore() {
         });
     }
 
+    /**
+     * Stock un fragment dans le store initialisé
+     * @memberof module:IndexDBStore
+     * @param {number} fragmentId
+     * @param {Object} fragmentData
+     * @returns {Promise} résultat de l'ajout
+     * @instance
+    */
     function storeFragment(fragmentId, fragmentData) {
         if (isFragmentStoreInitialized()) {
             return fragmentStore.setItem(fragmentId, fragmentData, function () {
@@ -186,6 +253,12 @@ function IndexDBStore() {
     //
     ////////////////////////////////////////
 
+    /**
+     * Supprime le contenu de tous les fragmentStore et du manifestStore
+     * @memberof module:IndexDBStore
+     * @returns {Promise} résultat de la suppression
+     * @instance
+    */
     function dropAll() {
         return localforage.clear().then(function () {
             return Promise.resolve();
@@ -194,6 +267,12 @@ function IndexDBStore() {
         });
     }
 
+    /**
+     * Supprime le store courant contenant les fragments
+     * @param {string} storeName
+     * @memberof module:IndexDBStore
+     * @instance
+    */
     function dropFragmentStore(storeName) {
         localforage.dropInstance({
             driver: localforage.INDEXEDDB,
@@ -207,6 +286,13 @@ function IndexDBStore() {
         return;
     }
 
+    /**
+     * Supprime l'enregistrement (fragmentStore + du tableau des manifests), à partir de son Id
+     * @memberof module:IndexDBStore
+     * @param {number} manifestId
+     * @returns {Promise} résultat de la suppression
+     * @instance
+    */
     function deleteRecordById(manifestId) {
         return manifestStore.getItem('manifest').then(function (array) {
             if (array) {
@@ -230,6 +316,13 @@ function IndexDBStore() {
         });
     }
 
+    /**
+     * Supprime le store contenant les fragments
+     * @memberof module:IndexDBStore
+     * @param {string} storeName
+     * @returns {Promise} résultat de la suppression
+     * @instance
+    */
     function deleteFragmentStore(storeName) {
         localforage.createInstance({
             name: 'dash_offline_db',

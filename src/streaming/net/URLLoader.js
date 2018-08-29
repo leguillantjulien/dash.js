@@ -33,6 +33,11 @@ import URLUtils from '../utils/URLUtils';
 import IndexDBOfflineLoader from '../../offline/net/IndexDBOfflineLoader';
 import HTTPLoader from '../../streaming/net/HTTPLoader';
 
+/**
+ * @module URLLoader
+ * @description  Call Offline Loader or Online Loader dependaing on URL
+ * @param {Object} config - dependances
+*/
 function URLLoader(cfg) {
 
     cfg = cfg || {};
@@ -54,7 +59,7 @@ function URLLoader(cfg) {
     function load(config) {
         if (urlUtils.isOfflineURL(config.request.url)) {
             if (!indexDBOfflineLoader) {
-                indexDBOfflineLoader = IndexDBOfflineLoader(context).create();
+                indexDBOfflineLoader = IndexDBOfflineLoader(context).getInstance();
             }
             indexDBOfflineLoader.load(config);
         } else {

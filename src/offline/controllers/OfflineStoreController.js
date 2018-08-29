@@ -31,6 +31,10 @@
 import FactoryMaker from './../../core/FactoryMaker';
 import IndexDBStore from './../storage/IndexDBStore';
 
+/**
+ * @class
+ * @description Offline Storage Controller
+ */
 function OfflineStoreController() {
 
     const context = this.context;

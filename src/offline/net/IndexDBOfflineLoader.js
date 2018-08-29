@@ -33,6 +33,11 @@ import IndexDBStore from '../storage/IndexDBStore';
 import URLUtils from './../../streaming/utils/URLUtils';
 import Constants from './../../streaming/constants/Constants';
 
+/**
+ * @module
+ * @description Load Offline resources
+
+ */
 function IndexDBOfflineLoader() {
 
     const context = this.context;
@@ -45,6 +50,12 @@ function IndexDBOfflineLoader() {
         indexDBStore = IndexDBStore(context).getInstance();
     }
 
+    /**
+     * Charge à partir de la BD locale le contenu d'un manifest ou des fragments à partir du mediaType - Equivalent du XHR local
+     * @param {object} config contenant la requête
+     * @memberof module:offline
+     * @instance
+    */
     function load(config) {
         if (config.request) {
             if (
@@ -90,5 +101,5 @@ function IndexDBOfflineLoader() {
 }
 
 IndexDBOfflineLoader.__dashjs_factory_name = 'IndexDBOfflineLoader';
-const factory = FactoryMaker.getClassFactory(IndexDBOfflineLoader);
+const factory = FactoryMaker.getSingletonFactory(IndexDBOfflineLoader);
 export default factory;
