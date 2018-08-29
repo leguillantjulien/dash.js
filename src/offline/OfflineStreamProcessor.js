@@ -56,7 +56,6 @@ function OfflineStreamProcessor() {
         mediaInfo,
         abrController,
         updating,
-        realAdaptation,
         currentVoRepresentation,
         offlineDownloaderRequestRule,
         downloadedSegments,
@@ -64,7 +63,6 @@ function OfflineStreamProcessor() {
         representation,
         isStopped,
         stream,
-        voRepresentations,
         qualityIndex;
 
     function setConfig(config) {
@@ -204,25 +202,10 @@ function OfflineStreamProcessor() {
         updateData();
     }
 
-    function getPeriodForStreamInfo(streamInfo, voPeriodsArray) {
-
-        for (let i = 0; i < voPeriodsArray.length; i++) {
-            let voPeriod = voPeriodsArray[i];
-
-            if (streamInfo.id === voPeriod.id) return voPeriod;
-        }
-
-        return null;
-    }
-
     function updateData() {
-        const selectedVoPeriod = getPeriodForStreamInfo(getStreamInfo(), adapter.getVoPeriods());
         const voAdaptation = adapter.getDataForMedia(mediaInfo);
-        let id = mediaInfo ? mediaInfo.id : null;
-
-        if (adapter.getVoPeriods().length > 0) {
-            realAdaptation = id ? dashManifestModel.getAdaptationForId(id, adapter.getVoPeriods()[0].mpd.manifest, selectedVoPeriod.index) : dashManifestModel.getAdaptationForIndex(mediaInfo.index, adapter.getVoPeriods()[0].mpd.manifest, selectedVoPeriod.index);
-            updateRepresentation(realAdaptation, voAdaptation, type);
+        if (voAdaptation) {
+            updateRepresentation(voAdaptation, type);
         } else {
             throw new Error('Any Vo Periods for this streamInfo');
         }
@@ -268,8 +251,7 @@ function OfflineStreamProcessor() {
         }
     }
 
-
-    function updateRepresentation(newRealAdaptation, voAdaptation, type) {
+    function updateRepresentation(voAdaptation, type) {
         const streamInfo = getStreamInfo();
         //Si l'index de qualité n'est pas défini on télécharge par défaut à la meilleur qualité du streamInfo
         if (qualityIndex === null) {
@@ -277,23 +259,22 @@ function OfflineStreamProcessor() {
         }
         updating = true;
 
-        voRepresentations = dashManifestModel.getRepresentationsForAdaptation(voAdaptation);
+        let voRepresentations = dashManifestModel.getRepresentationsForAdaptation(voAdaptation);
         currentVoRepresentation = voRepresentations[qualityIndex] !== undefined ? voRepresentations[qualityIndex] : voRepresentations[voRepresentations.length - 1];
-        realAdaptation = newRealAdaptation;
 
         if (type !== Constants.VIDEO && type !== Constants.AUDIO  && type !== Constants.TEXT && type !== Constants.FRAGMENTED_TEXT) {
             updating = false;
             return;
         }
 
-        indexHandler.updateRepresentation(currentVoRepresentation, true); //Update only one Representation
+        indexHandler.updateRepresentation(currentVoRepresentation, true); //update uniquement la représentation pour la qualité choisie
     }
 
     function onRepresentationUpdated(e) {
         if (e.sender.getStreamProcessor() !== instance || !isUpdating()) return;
 
         representation = e.representation;
-        eventBus.trigger(Events.DATA_UPDATE_COMPLETED, {sender: this, data: realAdaptation, currentRepresentation: currentVoRepresentation});
+        eventBus.trigger(Events.DATA_UPDATE_COMPLETED, {sender: this, currentRepresentation: currentVoRepresentation});
     }
 
     function getRepresentation() {
@@ -329,14 +310,12 @@ function OfflineStreamProcessor() {
     }
 
     function resetInitialSettings() {
-        voRepresentations = [];
         isInitialized = false;
         qualityIndex = null;
         downloadedSegments = 0;
         mimeType = null;
         mediaInfo = null;
         updating = false;
-        realAdaptation = null;
         currentVoRepresentation = NaN;
         downloadedSegments = null;
         representation = null;
