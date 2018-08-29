@@ -350,7 +350,7 @@ declare namespace dashjs {
 
     export interface GenericErrorEvent extends Event {
         type: MediaPlayerEvents['ERROR'];
-        error: 'capability' | 'mediasource' | 'key_session' | 'key_message';
+        error: 'capability' | 'mediasource' | 'key_session' | 'key_message' | 'indexedDB' | 'initOfflineDownloadError';
         event: string;
     }
 

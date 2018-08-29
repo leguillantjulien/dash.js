@@ -16,6 +16,14 @@ function ErrorHandlerMock () {
     this.timedTextError = function (error, msg) {
         this.error = msg;
     };
+
+    this.indexedDBError = function (error, msg) {
+        this.error = msg;
+    };
+
+    this.initOfflineDownloadError = function (error, msg) {
+        this.error = msg;
+    };
 }
 
 export default ErrorHandlerMock;

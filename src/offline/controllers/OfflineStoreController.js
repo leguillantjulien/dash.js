@@ -40,12 +40,19 @@ function OfflineStoreController() {
     const context = this.context;
 
     let instance,
+        errHandler,
         indexDBStore;
 
     function setup() {
         indexDBStore = IndexDBStore(context).getInstance();
     }
 
+    function setConfig(config) {
+        if (config.errHandler) {
+            errHandler = config.errHandler;
+        }
+    }
+    
     function setFragmentStore(storeName) {
         indexDBStore.setFragmentStore(storeName);
     }
@@ -79,6 +86,7 @@ function OfflineStoreController() {
     }
 
     instance = {
+        setConfig: setConfig,
         isFragmentStoreInitialized: isFragmentStoreInitialized,
         storeFragment: storeFragment,
         storeOfflineManifest: storeOfflineManifest,

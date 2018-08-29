@@ -112,6 +112,10 @@ function OfflineController() {
         baseURLController.setConfig({
             dashManifestModel: dashManifestModel
         });
+
+        offlineStoreController.setConfig({
+            errHandler: errHandler
+        })
         manifestUpdater.initialize();
     }
 

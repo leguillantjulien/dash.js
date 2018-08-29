@@ -89,6 +89,14 @@ function ErrorHandler() {
         eventBus.trigger(Events.ERROR, {error: 'mssError', event: err});
     }
 
+    function indexedDBError(err) {
+        eventBus.trigger(Events.ERROR, {error: 'indexedDBError', event: err});
+    }
+
+    function initOfflineDownloadError(err) {
+        eventBus.trigger(Events.ERROR, {error: 'initOfflineDownloadError', event: err});
+    }
+
     instance = {
         capabilityError: capabilityError,
         downloadError: downloadError,
@@ -97,7 +105,9 @@ function ErrorHandler() {
         mediaSourceError: mediaSourceError,
         mediaKeySessionError: mediaKeySessionError,
         mediaKeyMessageError: mediaKeyMessageError,
-        mssError: mssError
+        mssError: mssError,
+        indexedDBError: indexedDBError,
+        initOfflineDownloadError: initOfflineDownloadError
     };
 
     return instance;
