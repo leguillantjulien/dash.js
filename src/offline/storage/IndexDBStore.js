@@ -104,7 +104,11 @@ function IndexDBStore() {
     function setDownloadingStatus(manifestId, newStatus) {
         return getManifestById(manifestId).then(function (item) {
             item.status = newStatus;
-            return updateManifest(item);
+            return updateManifest(item).catch(function () {
+                return Promise.reject('Cannot set status ' + newStatus + ' for this stream !');
+            });
+        }).catch(function (err) {
+            return Promise.reject(err);
         });
     }
 
@@ -117,7 +121,6 @@ function IndexDBStore() {
     */
     function getFragmentByKey(key) {
         return fragmentStore.getItem(key).then(function (value) {
-            //console.log('getFragmentByKey => ' + value);
             return Promise.resolve(value);
         }).catch(function (err) {
             return Promise.reject(err);
@@ -145,7 +148,7 @@ function IndexDBStore() {
                     item.manifest = entities.decode(item.manifest);
                     return Promise.resolve(item);
                 } else {
-                    return Promise.reject('Cannot found manifest with this manifestId !');
+                    return Promise.reject('Cannot found manifest with this manifestId : ' + id);
                 }
             } else {
                 return Promise.reject('Any manifests stored in DB !');
@@ -189,7 +192,7 @@ function IndexDBStore() {
                 return Promise.resolve(higherManifestId);
             }
         }).catch(function (err) {
-            return Promise.resolve(err);
+            return Promise.reject(err);
         });
     }
 
@@ -222,10 +225,10 @@ function IndexDBStore() {
      * @instance
     */
     function storeManifest(manifest) {
-        manifestStore.getItem('manifest').then(function (results) {
+        return manifestStore.getItem('manifest').then(function (results) {
             let array = results ? results : { 'manifests': [] };
             array.manifests.push(manifest);
-            manifestStore.setItem('manifest',array);
+            return manifestStore.setItem('manifest',array);
         });
     }
 
@@ -244,7 +247,7 @@ function IndexDBStore() {
             }).catch(function (err) {
                 return Promise.reject(err);
             });
-        } else return Promise.reject('FragmentStore Not Init');
+        } else return Promise.reject('FragmentStore is not initialized !');
     }
 
     /////////////////////////////////////////
