@@ -156,14 +156,18 @@ function OfflineController() {
     }
 
     function onDownloadingStarted(e) {
-        if (!e.error && manifestId != null) {
+        if (!e.error && manifestId !== null) {
             offlineStoreController.setDownloadingStatus(manifestId, e.status);
+        } else {
+            throw e.error;
         }
     }
 
     function onDownloadingFinished(e) {
-        if (!e.error && manifestId != null) {
+        if (!e.error && manifestId !== null) {
             offlineStoreController.setDownloadingStatus(manifestId, e.status);
+        } else {
+            throw e.error;
         }
         resetRecord();
     }
@@ -219,7 +223,7 @@ function OfflineController() {
      * @instance
     */
     function storeOfflineManifest(offlineManifest) {
-        offlineStoreController.storeOfflineManifest(offlineManifest);
+        return offlineStoreController.storeOfflineManifest(offlineManifest);
     }
 
     /**
@@ -243,17 +247,18 @@ function OfflineController() {
     }
 
     /**
-     * Initialise le téléchargement et la génération du manifest hors ligne.
+     * Initialise le store des fragment puis le manifest hors ligne avant d'initialiser les bandes passantes / téléchargement.
      * @param {Object[]} allSelectedMediaInfos
      * @instance
     */
     function initializeDownload(allSelectedMediaInfos) {
         try {
-            generateManifestId().then(function (manifestId) {
+            generateManifestId().then(function (mId) {
+                manifestId = mId;
                 setFragmentStore(manifestId);
-                generateOfflineManifest(XMLManifest, allSelectedMediaInfos, manifestId);
-            }).then(function () {
-                initializeAllMediasBitratesList(allSelectedMediaInfos);
+                generateOfflineManifest(XMLManifest, allSelectedMediaInfos, manifestId).then(function () {
+                    initializeAllMediasBitratesList(allSelectedMediaInfos);
+                });
             });
         } catch (err) {
             throw new Error(err);
@@ -273,7 +278,7 @@ function OfflineController() {
             allMediaInfos: allSelectedMediaInfos
         });
 
-        parser.parse(XMLManifest).then(function (parsedManifest) {
+        return parser.parse(XMLManifest).then(function (parsedManifest) {
             if (parsedManifest !== null && manifestId !== null) {
                 let offlineManifest = {
                     'fragmentStore': 'manifest_' + manifestId,
@@ -283,12 +288,12 @@ function OfflineController() {
                     'originalURL': manifest.url,
                     'manifest': parsedManifest
                 };
-                storeOfflineManifest(offlineManifest);
+                return storeOfflineManifest(offlineManifest);
             } else {
-                throw new Error('falling parsing offline manifest');
+                return Promise.reject('falling parsing offline manifest');
             }
         }).catch(function (err) {
-            throw new Error(err);
+            return Promise.reject(err);
         });
     }
 
