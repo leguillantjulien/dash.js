@@ -54,16 +54,16 @@ function OfflineStoreController() {
         indexDBStore.storeManifest(manifest);
     }
 
-    function countManifest() {
-        return indexDBStore.countManifest();
+    function getCurrentHigherManifestId() {
+        return indexDBStore.getCurrentHigherManifestId();
     }
 
     function getAllManifests() {
         return indexDBStore.getAllManifests();
     }
 
-    function deleteManifestById(manifestId) {
-        return indexDBStore.deleteManifestById(manifestId);
+    function deleteRecordById(manifestId) {
+        return indexDBStore.deleteRecordById(manifestId);
     }
 
     function isFragmentStoreInitialized() {
@@ -79,9 +79,9 @@ function OfflineStoreController() {
         storeFragment: storeFragment,
         storeOfflineManifest: storeOfflineManifest,
         setFragmentStore: setFragmentStore,
-        countManifest: countManifest,
+        getCurrentHigherManifestId: getCurrentHigherManifestId,
         getAllManifests: getAllManifests,
-        deleteManifestById: deleteManifestById,
+        deleteRecordById: deleteRecordById,
         setDownloadingStatus: setDownloadingStatus
     };
 

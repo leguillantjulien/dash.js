@@ -235,9 +235,9 @@ function OfflineController() {
      * @memberof module:offline
      * @instance
     */
-    function initializeAllMediaBitrateList(allSelectedMediaInfos) {
+    function initializeAllMediasBitratesList(allSelectedMediaInfos) {
         for (let i = 0; i < streams.length; i++) {
-            streams[i].initializeAllMediaBitrateList(allSelectedMediaInfos);
+            streams[i].initializeAllMediasBitratesList(allSelectedMediaInfos);
         }
     }
 
@@ -253,7 +253,7 @@ function OfflineController() {
                 setFragmentStore(manifestId);
                 generateOfflineManifest(XMLManifest, allSelectedMediaInfos, manifestId);
             }).then(function () {
-                initializeAllMediaBitrateList(allSelectedMediaInfos);
+                initializeAllMediasBitratesList(allSelectedMediaInfos);
             });
         } catch (err) {
             throw new Error(err);
@@ -300,7 +300,7 @@ function OfflineController() {
      * @instance
     */
     function generateManifestId() {
-        return offlineStoreController.countManifest().then(function (count) {
+        return offlineStoreController.getCurrentHigherManifestId().then(function (count) {
             return count + 1;
         });
     }
@@ -342,7 +342,7 @@ function OfflineController() {
             stopRecord();
             isRecordingStatus = false;
         }
-        return offlineStoreController.deleteManifestById(manifestId).then(function () {
+        return offlineStoreController.deleteRecordById(manifestId).then(function () {
             return Promise.resolve();
         }).catch(function (err) {
             return Promise.reject(err);

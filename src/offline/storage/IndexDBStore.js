@@ -82,7 +82,7 @@ function IndexDBStore() {
     }
 
     function setDownloadingStatus(manifestId, newStatus) {
-        return getManifestByKey(manifestId).then(function (item) {
+        return getManifestById(manifestId).then(function (item) {
             item.status = newStatus;
             return updateManifest(item);
         });
@@ -98,12 +98,12 @@ function IndexDBStore() {
 
     }
 
-    function getManifestByKey(key) {
+    function getManifestById(id) {
         return getAllManifests().then(function (array) {
             if (array) {
                 let item = null;
                 for (let i = 0; i < array.manifests.length; i++) {
-                    if (array.manifests[i].manifestId === parseInt(key)) {
+                    if (array.manifests[i].manifestId === parseInt(id)) {
                         item = array.manifests[i];
                     }
                 }
@@ -129,7 +129,7 @@ function IndexDBStore() {
         });
     }
 
-    function countManifest() {
+    function getCurrentHigherManifestId() {
         return getAllManifests().then(function (array) {
             let higherManifestId = 0;
             if (array) {
@@ -207,10 +207,10 @@ function IndexDBStore() {
         return;
     }
 
-    function deleteManifestById(manifestId) {
+    function deleteRecordById(manifestId) {
         return manifestStore.getItem('manifest').then(function (array) {
             if (array) {
-                return deleteManifestStore('manifest_' + manifestId).then(function () {
+                return deleteFragmentStore('manifest_' + manifestId).then(function () {
                     for (let i = 0; i < array.manifests.length; i++) {
                         if (array.manifests[i].manifestId === parseInt(manifestId)) {
                             array.manifests.splice(i, 1);
@@ -230,7 +230,7 @@ function IndexDBStore() {
         });
     }
 
-    function deleteManifestStore(storeName) {
+    function deleteFragmentStore(storeName) {
         localforage.createInstance({
             name: 'dash_offline_db',
             storeName: storeName
@@ -253,17 +253,17 @@ function IndexDBStore() {
     instance = {
         dropAll: dropAll,
         getFragmentByKey: getFragmentByKey,
-        getManifestByKey: getManifestByKey,
+        getManifestById: getManifestById,
         storeFragment: storeFragment,
         storeManifest: storeManifest,
         updateManifest: updateManifest,
         setFragmentStore: setFragmentStore,
         setDownloadingStatus: setDownloadingStatus,
-        countManifest: countManifest,
+        getCurrentHigherManifestId: getCurrentHigherManifestId,
         getAllManifests: getAllManifests,
         dropFragmentStore: dropFragmentStore,
         isFragmentStoreInitialized: isFragmentStoreInitialized,
-        deleteManifestById: deleteManifestById
+        deleteRecordById: deleteRecordById
     };
 
     return instance;

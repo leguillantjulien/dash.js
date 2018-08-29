@@ -66,7 +66,7 @@ function IndexDBOfflineLoader() {
             else if (config.request.mediaType === Constants.STREAM) {
                 let manifestId = urlUtils.removeHostname(config.request.url);
                 if (manifestId % 1 === 0) {
-                    indexDBStore.getManifestByKey(manifestId).then(function (item) {
+                    indexDBStore.getManifestById(manifestId).then(function (item) {
                         indexDBStore.setFragmentStore(item.fragmentStore);
                         config.success(item.manifest, null, config.request.url, Constants.XML);
                     }).catch(function (err) {

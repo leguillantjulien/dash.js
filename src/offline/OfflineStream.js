@@ -60,7 +60,7 @@ function OfflineStream(config) {
         streamInfo,
         fragmentController,
         availableSegments,
-        allSelectedMediaBitrateList,
+        allMediasBitratesList,
         logger;
 
     function setup() {
@@ -75,7 +75,7 @@ function OfflineStream(config) {
         streamInfo = null;
         offlineStreamProcessors = [];
         finishedOfflineStreamProcessors = 0;
-        allSelectedMediaBitrateList = [];
+        allMediasBitratesList = [];
     }
 
     function setConfig(config) {
@@ -103,20 +103,20 @@ function OfflineStream(config) {
 
     }
 
-    function initialize(StreamInfo) {
-        streamInfo = StreamInfo;
+    function initialize(initStreamInfo) {
+        streamInfo = initStreamInfo;
         fragmentController = FragmentController(context).create({
             errHandler: errHandler,
             metricsModel: MetricsModel(context).getInstance(),
             requestModifier: RequestModifier(context).getInstance()
         });
-        initializeMediaBitrate(streamInfo);
+        getMediaBitrate(streamInfo);
         setAvailableSegments();
         eventBus.on(Events.DATA_UPDATE_COMPLETED, onDataUpdateCompleted, this);
         eventBus.on(Events.STREAM_COMPLETED, onStreamCompleted, this);
     }
 
-    function initializeMediaBitrate(streamInfo) {
+    function getMediaBitrate(streamInfo) {
         let availableBitRateList = [];
         if (getBitrateListForType(Constants.VIDEO, streamInfo) !== null) {
             availableBitRateList.push(getBitrateListForType(Constants.VIDEO, streamInfo));
@@ -152,8 +152,8 @@ function OfflineStream(config) {
         return abrController.getBitrateList(mediaInfo);
     }
 
-    function initializeAllMediaBitrateList(allMediaBitrateList) {
-        allSelectedMediaBitrateList = allMediaBitrateList;
+    function initializeAllMediasBitratesList(mediasBitratesList) {
+        allMediasBitratesList = mediasBitratesList;
         initializeMedia(streamInfo);
         setAvailableSegments();
     }
@@ -166,35 +166,32 @@ function OfflineStream(config) {
         initializeMediaForType(Constants.EMBEDDED_TEXT,streamInfo);
         initializeMediaForType(Constants.MUXED,streamInfo);
         initializeMediaForType(Constants.IMAGE,streamInfo);
-
     }
 
     function initializeMediaForType(type, streamInfo) {
         const allMediaForType = adapter.getAllMediaInfoForType(streamInfo, type);
         let mediaInfo = getMediaInfoForType(type, allMediaForType);
         if (mediaInfo !== null) {
-            mediaInfo = keepOnlySelectedBitrate(type, mediaInfo);
+            mediaInfo = assignBitratesForMedia(type, mediaInfo);
             createOfflineStreamProcessor(mediaInfo, allMediaForType);
         }
 
     }
 
-    function keepOnlySelectedBitrate(type, mediaInfo) {
-        let bitrateForType = getSelectedBitrateListForType(type,allSelectedMediaBitrateList);
+    function assignBitratesForMedia(type, mediaInfo) {
+        let bitrateForType = getBitrateForType(type);
         if (bitrateForType !== null) {
             mediaInfo.bitrateList = bitrateForType;
         }
         return mediaInfo;
     }
-
-    function getSelectedBitrateListForType(type, allSelectedMediaBitrateList) {
+    function getBitrateForType(type) {
         let currentMediaBitrate,
             bitrateForType;
 
         bitrateForType = null;
-
-        for (let i = 0; i < allSelectedMediaBitrateList.length; i++) {
-            currentMediaBitrate = JSON.parse(allSelectedMediaBitrateList[i]);
+        for (let i = 0; i < allMediasBitratesList.length; i++) {
+            currentMediaBitrate = JSON.parse(allMediasBitratesList[i]);
             if (type == currentMediaBitrate.mediaType) {
                 bitrateForType = currentMediaBitrate;
             }
@@ -318,9 +315,6 @@ function OfflineStream(config) {
             }
         }
     }
-    function getAvailableSegments() {
-        return availableSegments;
-    }
 
     function deactivate() {
         let ln = offlineStreamProcessors ? offlineStreamProcessors.length : 0;
@@ -346,14 +340,13 @@ function OfflineStream(config) {
     instance = {
         initialize: initialize,
         setConfig: setConfig,
-        initializeAllMediaBitrateList: initializeAllMediaBitrateList,
+        initializeAllMediasBitratesList: initializeAllMediasBitratesList,
         offlineStreamProcessor: offlineStreamProcessor,
         getFragmentController: getFragmentController,
         getStreamInfo: getStreamInfo,
         stopOfflineStreamProcessors: stopOfflineStreamProcessors,
         resumeOfflineStreamProcessors: resumeOfflineStreamProcessors,
         getRecordProgression: getRecordProgression,
-        getAvailableSegments: getAvailableSegments,
         setAvailableSegments: setAvailableSegments,
         reset: reset
     };

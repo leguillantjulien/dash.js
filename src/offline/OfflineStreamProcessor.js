@@ -347,7 +347,6 @@ function OfflineStreamProcessor() {
         getType: getType,
         isUpdating: isUpdating,
         getRepresentation: getRepresentation,
-        getPeriodForStreamInfo: getPeriodForStreamInfo,
         getStreamProcessor: getStreamProcessor,
         start: start,
         stop: stop,

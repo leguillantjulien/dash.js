@@ -200,15 +200,14 @@ function OfflineIndexDBManifestParser(config) {
         let bestBandwidth = findBestBandwith(representations);
 
         if (bestBandwidth !== null) {
-            keepOnlyBestRepresentation(currentAdaptationSet, bestBandwidth);
+            keepOnlyBestRepresentation(currentAdaptationSet, representations, bestBandwidth);
         } else {
             throw new Error('Cannot find best Bandwith !');
         }
     }
 
-    function keepOnlyBestRepresentation(currentAdaptationSet, bestBandwidth) {
+    function keepOnlyBestRepresentation(currentAdaptationSet, representations, bestBandwidth) {
         let i = 0;
-        let representations = currentAdaptationSet.getElementsByTagName(ELEMENT_TYPE_REPRESENTATION);
 
         do {
             if (parseInt(representations[i].getAttribute(ATTRIBUTE_TYPE_BANDWITH)) !== bestBandwidth) {
