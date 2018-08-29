@@ -115,7 +115,7 @@ function OfflineController() {
 
         offlineStoreController.setConfig({
             errHandler: errHandler
-        })
+        });
         manifestUpdater.initialize();
     }
 

@@ -52,7 +52,7 @@ function OfflineStoreController() {
             errHandler = config.errHandler;
         }
     }
-    
+
     function setFragmentStore(storeName) {
         indexDBStore.setFragmentStore(storeName);
     }
