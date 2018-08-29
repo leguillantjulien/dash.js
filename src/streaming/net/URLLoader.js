@@ -36,7 +36,7 @@ import HTTPLoader from '../../streaming/net/HTTPLoader';
 /**
  * @module URLLoader
  * @description  Call Offline Loader or Online Loader dependaing on URL
- * @param {Object} config - dependances
+ * @param {Object} cfg - dependances
 */
 function URLLoader(cfg) {
 
