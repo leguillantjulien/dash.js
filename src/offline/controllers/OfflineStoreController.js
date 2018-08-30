@@ -59,49 +59,74 @@ function OfflineStoreController() {
     }
 
     function setFragmentStore(storeName) {
-        indexDBStore.setFragmentStore(storeName);
+        try {
+            indexDBStore.setFragmentStore(storeName);
+        } catch (err) {
+            manageDOMError(err);
+        }
     }
 
     function storeFragment(fragmentId, fragmentData) {
         indexDBStore.storeFragment(fragmentId, fragmentData).catch(function (err) {
-            errHandler.indexedDBError(err);
+            manageDOMError(err);
         });
     }
 
     function storeOfflineManifest(manifest) {
         return indexDBStore.storeManifest(manifest).catch(function (err) {
-            errHandler.indexedDBError(err);
+            manageDOMError(err);
         });
     }
 
     function getCurrentHigherManifestId() {
         return indexDBStore.getCurrentHigherManifestId().catch(function (err) {
-            errHandler.indexedDBError(err);
+            manageDOMError(err);
         });
     }
 
     function getAllManifests() {
         return indexDBStore.getAllManifests().catch(function (err) {
-            errHandler.indexedDBError(err);
+            manageDOMError(err);
         });
     }
 
     function deleteRecordById(manifestId) {
         return indexDBStore.deleteRecordById(manifestId).catch(function (err) {
-            errHandler.indexedDBError(err);
+            manageDOMError(err);
         });
     }
 
     function isFragmentStoreInitialized() {
         return indexDBStore.isFragmentStoreInitialized().catch(function (err) {
-            errHandler.indexedDBError(err);
+            manageDOMError(err);
         });
     }
 
     function setDownloadingStatus(manifestId, status) {
         indexDBStore.setDownloadingStatus(manifestId, status).catch(function (err) {
-            errHandler.indexedDBError(err);
+            manageDOMError(err);
         });
+    }
+
+    function manageDOMError(err) {
+        if (err) {
+            switch (err.name) {
+                case 'QuotaExceedError':
+                    eventBus.trigger(Events.INDEXEDDB_QUOTA_EXCEED_ERROR);
+                    break;
+                case 'InvalidStateError':
+                    eventBus.trigger(Events.INDEXEDDB_INVALID_STATE_ERROR);
+                    break;
+                case 'NotFoundError':
+                    eventBus.trigger(Events.INDEXEDDB_NOT_FOUND_ERROR);
+                    break;
+                case 'VersionError':
+                    eventBus.trigger(Events.INDEXEDDB_VERSION_ERROR);
+                    break;
+                // TODO : Manage all DOM cases
+            }
+            errHandler.indexedDBError(err);
+        }
     }
 
     instance = {
