@@ -332,7 +332,7 @@ function OfflineStream(config) {
     function checkIfAllOfflineStreamProcessorsStarted() {
         startedOfflineStreamProcessors++;
         if (startedOfflineStreamProcessors === offlineStreamProcessors.length) {
-            eventBus.trigger(Events.DOWNLOADING_STARTED, {sender: this, status: 'started', message: 'Downloading has been successfully started for this stream !'});
+            eventBus.trigger(Events.DOWNLOADING_STARTED, {sender: this, status: 'started', message: 'Downloading started for this stream !'});
         }
     }
 

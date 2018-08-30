@@ -800,6 +800,11 @@ app.controller('DashController', function ($scope, $timeout, $q, sources, contri
 
 
     $scope.player.on(dashjs.MediaPlayer.events.DOWNLOADING_STARTED, function (e) { /* jshint ignore:line */
+        $scope.successMessage  = e.message;
+        $(".alert.alert-success").show();
+        $(".alert.alert-success").fadeTo(2500, 500).slideUp(500, function(){
+            $(".alert.alert-success").slideUp(500);
+        });
         $scope.updateRecordProgression();
         $(".progress").show();
         $(".stopDownload").show();
