@@ -30,7 +30,7 @@
  */
 import EventBus from './../core/EventBus';
 import Events from './../core/events/Events';
-import OfflineEvents from './OfflineEvents';
+import OfflineEvents from './events/OfflineEvents';
 import FactoryMaker from './../core/FactoryMaker';
 import Debug from './../core/Debug';
 import MetricsModel from './../streaming/models/MetricsModel';
