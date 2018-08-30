@@ -30,6 +30,9 @@
  */
 import FactoryMaker from './../../core/FactoryMaker';
 import IndexDBStore from './../storage/IndexDBStore';
+import DOMExceptionsEvents from '../events/DOMExceptionsEvents';
+import EventBus from './../../core/EventBus';
+import Events from './../../core/events/Events';
 
 /**
  * @class
@@ -38,6 +41,7 @@ import IndexDBStore from './../storage/IndexDBStore';
 function OfflineStoreController() {
 
     const context = this.context;
+    const eventBus = EventBus(context).getInstance();
 
     let instance,
         errHandler,
@@ -45,6 +49,7 @@ function OfflineStoreController() {
 
     function setup() {
         indexDBStore = IndexDBStore(context).getInstance();
+        Events.extend(DOMExceptionsEvents);
     }
 
     function setConfig(config) {
