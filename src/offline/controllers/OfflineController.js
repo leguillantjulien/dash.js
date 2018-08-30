@@ -127,12 +127,21 @@ function OfflineController() {
      * @instance
     */
     function record(url) {
+        setupOfflineEvents();
+        manifestLoader.load(url);
+        isRecordingStatus = true;
+    }
+
+    function setupOfflineEvents(){
         eventBus.on(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
         eventBus.on(Events.ORIGINAL_MANIFEST_LOADED, onOriginalManifestLoaded, instance);
         eventBus.on(Events.DOWNLOADING_STARTED, onDownloadingStarted, instance);
         eventBus.on(Events.DOWNLOADING_FINISHED, onDownloadingFinished, instance);
-        manifestLoader.load(url);
-        isRecordingStatus = true;
+        setupIndexedDBEvents();
+    }
+    function setupIndexedDBEvents(){
+        eventBus.on(Events.INDEXEDDB_QUOTA_EXCEED_ERROR, stopRecord, instance);
+        eventBus.on(Events.INDEXEDDB_INVALID_STATE_ERROR, stopRecord, instance);
     }
 
     /**
@@ -324,6 +333,7 @@ function OfflineController() {
      * @instance
     */
     function stopRecord() {
+        console.log('stop record INDEXEDDB_QUOTA_EXCEED_ERROR');
         if (manifestId !== null && isRecording) {
             for (let i = 0, ln = streams.length; i < ln; i++) {
                 streams[i].stopOfflineStreamProcessors();
@@ -390,8 +400,17 @@ function OfflineController() {
         eventBus.off(Events.FRAGMENT_LOADING_COMPLETED, storeFragment, instance);
         eventBus.off(Events.MANIFEST_UPDATED, onManifestUpdated, instance);
         eventBus.off(Events.ORIGINAL_MANIFEST_LOADED, onOriginalManifestLoaded, instance);
+        resetOfflineEvents();
+    }
+
+    function resetOfflineEvents(){
         eventBus.off(Events.DOWNLOADING_STARTED, onDownloadingStarted, instance);
         eventBus.off(Events.DOWNLOADING_FINISHED, onDownloadingFinished, instance);
+        resetIndexedDBEvents();
+    }
+    function resetIndexedDBEvents(){
+        eventBus.off(Events.INDEXEDDB_QUOTA_EXCEED_ERROR, stopRecord, instance);
+        eventBus.off(Events.INDEXEDDB_INVALID_STATE_ERROR, stopRecord, instance);
     }
 
     /**
