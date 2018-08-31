@@ -240,17 +240,6 @@ function OfflineStreamProcessor() {
 
 
     /**
-     * Methode mocké ...
-     * @param {any} time
-     * @memberof OfflineStreamProcessor#
-    */
-    function timeIsBuffered(time) {
-        if (time !== undefined) {
-            return true;
-        }
-    }
-
-    /**
      * Méthode appelée pour démarrer le téléchargement si une représentation existe.
      * @memberof OfflineStreamProcessor#
     */
@@ -397,7 +386,6 @@ function OfflineStreamProcessor() {
         start: start,
         stop: stop,
         resume: resume,
-        timeIsBuffered: timeIsBuffered,
         getAvailableSegmentsNumber: getAvailableSegmentsNumber,
         getDownloadedSegments: getDownloadedSegments,
         reset: reset
