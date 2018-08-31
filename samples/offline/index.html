@@ -299,14 +299,13 @@
             </div>
 
             <!-- DOWNLOAD SECTION -->
-            <div class="col-md-2">
+            <div class="container col-md-2 col-sm-3 col-xs-5 col-lg-2">
                 <div class="list-group">
-                    <a href="#" class="list-group-item list-group-item-action active download" ng-click="doDownload()">Download</a>
-                    <a href="#" class="list-group-item list-group-item-action stopDownload" ng-click="doStopDownload()">Stop Download</a>
-                    <a href="#" class="list-group-item list-group-item-action resumeDownload" ng-click="doResumeDownload()">Resume Download</a>
+                        <a href="#" class="list-group-item list-group-item-action active download" ng-click="doDownload()"><p class="text-center">Download</p></a>
+                        <a href="#" class="list-group-item list-group-item-action stopDownload" ng-click="doStopDownload()"><p class="text-center">Stop Download</p></a>
+                        <a href="#" class="list-group-item list-group-item-action resumeDownload" ng-click="doResumeDownload()"><p class="text-center">Resume Download</p></a>
                 </div>
                 <div class="progress">
-                    <!--TODO : Add multibar for each content type -->
                     <div class="progress-bar" role="progressbar" ng-style="{ 'width': getRecordProgression() + '%' }" aria-valuenow="{{ getRecordProgression() }}" aria-valuemin="0" aria-valuemax="100">{{ getRecordProgression() }} %</div>
                 </div>
             <!-- NETWORK STATUS !-->

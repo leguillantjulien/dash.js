@@ -521,6 +521,20 @@ CONTROL BAR CSS NEEDS TO MOVE INTO THE CONTROL BAR
     padding: 0px;
 }
 
+.list-group{
+    margin-top: 30px;
+}
+
+.download{
+    font-size:16px;
+}
+/********************************************************
+Label offline information
+*********************************************************/
+.list-group-item{
+    height: 40px;
+    padding: 10px 15px;
+}
 
 .lb-md {
     font-size: 16px;
