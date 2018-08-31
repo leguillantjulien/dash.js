@@ -521,6 +521,11 @@ CONTROL BAR CSS NEEDS TO MOVE INTO THE CONTROL BAR
     padding: 0px;
 }
 
+
+.lb-md {
+    font-size: 16px;
+}
+
 /********************************************************
 Download Messages
 *********************************************************/

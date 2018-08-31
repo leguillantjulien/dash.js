@@ -43,6 +43,18 @@ angular.module('DashIFTestVectorsService', ['ngResource']).factory('dashifTestVe
 });
 
 app.controller('DashController', function ($scope, $timeout, $q, sources, contributors, dashifTestVectors) {
+    let updateNetworkStatus = function () {
+        if (navigator.onLine) {
+            $scope.isOffline = 'ONLINE';
+        } else {
+            $scope.isOffline = 'OFFLINE';
+        }
+        $scope.$apply();
+    };
+    setTimeout(updateNetworkStatus, 0); //init
+    setInterval(updateNetworkStatus, 2000);
+
+
     $scope.selectedItem = {
         url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd'
     };

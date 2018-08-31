@@ -309,6 +309,12 @@
                     <!--TODO : Add multibar for each content type -->
                     <div class="progress-bar" role="progressbar" ng-style="{ 'width': getRecordProgression() + '%' }" aria-valuenow="{{ getRecordProgression() }}" aria-valuemin="0" aria-valuemax="100">{{ getRecordProgression() }} %</div>
                 </div>
+            <!-- NETWORK STATUS !-->
+                    <p class="text-center"><b>Network Status</b>
+                        <span class="label label-info lb-md">
+                            {{isOffline}}
+                        </span>
+                    </p>
             </div>
 
         </div>
