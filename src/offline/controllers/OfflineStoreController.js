@@ -111,7 +111,7 @@ function OfflineStoreController() {
     function manageDOMError(err) {
         if (err) {
             switch (err.name) {
-                case 'QuotaExceedError':
+                case 'QuotaExceededError':
                     eventBus.trigger(Events.INDEXEDDB_QUOTA_EXCEED_ERROR);
                     break;
                 case 'InvalidStateError':
