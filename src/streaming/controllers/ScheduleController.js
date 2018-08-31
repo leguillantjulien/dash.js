@@ -40,6 +40,7 @@ import Events from '../../core/events/Events';
 import FactoryMaker from '../../core/FactoryMaker';
 import Debug from '../../core/Debug';
 import MediaController from './MediaController';
+import {replaceTokenForTemplate} from '../../dash/utils/SegmentsUtils';
 
 function ScheduleController(config) {
 
@@ -298,6 +299,7 @@ function ScheduleController(config) {
         const request = adapter.getInitRequest(streamProcessor, quality);
         if (request) {
             setFragmentProcessState(true);
+            request.url = replaceTokenForTemplate(request.url, 'Bandwidth', currentRepresentationInfo.bandwidth);
             fragmentModel.executeRequest(request);
         }
     }
@@ -315,7 +317,7 @@ function ScheduleController(config) {
             return;
         }
 
-        currentRepresentationInfo = streamProcessor.getRepresentationInfoForQuality(e.newQuality);
+        currentRepresentationInfo = streamProcessor.getRepresentationInfo(e.newQuality);
 
         if (currentRepresentationInfo === null || currentRepresentationInfo === undefined) {
             throw new Error('Unexpected error! - currentRepresentationInfo is null or undefined');
@@ -369,7 +371,7 @@ function ScheduleController(config) {
             return;
         }
 
-        currentRepresentationInfo = streamProcessor.getCurrentRepresentationInfo();
+        currentRepresentationInfo = streamProcessor.getRepresentationInfo();
 
         if (initialRequest) {
             if (playbackController.getIsDynamic()) {
@@ -392,7 +394,7 @@ function ScheduleController(config) {
             const liveEdge = liveEdgeFinder.getLiveEdge();
             const dvrWindowSize = currentRepresentationInfo.mediaInfo.streamInfo.manifestInfo.DVRWindowSize / 2;
             const startTime = liveEdge - playbackController.computeLiveDelay(currentRepresentationInfo.fragmentDuration, dvrWindowSize);
-            const request = adapter.getFragmentRequestForTime(streamProcessor, currentRepresentationInfo, startTime, {
+            const request = adapter.getFragmentRequest(streamProcessor, currentRepresentationInfo, startTime, {
                 ignoreIsFinished: true
             });
 
@@ -406,7 +408,7 @@ function ScheduleController(config) {
                     playbackController.setLiveStartTime(request.startTime);
                 }
             } else {
-                logger.debug('setLiveEdgeSeekTarget : getFragmentRequestForTime returned undefined request object');
+                logger.debug('setLiveEdgeSeekTarget : getFragmentRequest returned undefined request object');
             }
             seekTarget = playbackController.getStreamStartTime(false, liveEdge);
             streamProcessor.getBufferController().setSeekStartTime(seekTarget);
